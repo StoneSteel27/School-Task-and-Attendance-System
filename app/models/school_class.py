@@ -50,6 +50,20 @@ class SchoolClass(Base):
         cascade="all, delete-orphan" # If class is deleted, its attendance records are also deleted
     )
 
+    # --- NEW RELATIONSHIPS FOR Task and Announcement ---
+    tasks = relationship(
+        "Task",
+        back_populates="school_class",
+        cascade="all, delete-orphan"
+    )
+
+    announcements = relationship(
+        "Announcement",
+        back_populates="school_class",
+        cascade="all, delete-orphan"
+    )
+    # --- END NEW RELATIONSHIPS ---
+
     def __repr__(self):
         return f"<SchoolClass(id={self.id}, class_code='{self.class_code}', name='{self.name}')>"
 

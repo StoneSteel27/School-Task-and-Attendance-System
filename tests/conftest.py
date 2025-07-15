@@ -35,30 +35,26 @@ def setup_test_database():
 @pytest.fixture(scope="function")
 def db() -> SQLAlchemySession:
     connection = engine_test.connect()
-    transaction = connection.begin()  # Start a real database transaction
-
-    # Create a session that's bound to this connection and transaction
+    transaction = connection.begin()
     session = TestingSessionLocal(bind=connection)
 
-    # Start a savepoint (nested transaction).
-    session.begin_nested()
+    # Begin a nested transaction (using SAVEPOINT)
+    nested = session.begin_nested()
 
-    # This event listener ensures that if a savepoint is committed or rolled back by the app code,
-    # a new savepoint is immediately started.
     @sqlalchemy_event.listens_for(session, "after_transaction_end")
-    def restart_savepoint(sess, trans):
-        if trans.nested and sess.is_active and not trans.is_active:
-            sess.begin_nested()
+    def end_savepoint(sess, trans):
+        nonlocal nested
+        if not nested.is_active:
+            nested = session.begin_nested()
 
     app.dependency_overrides[get_db] = lambda: session
 
     yield session
 
+    # Rollback the overall transaction, undoing everything
     app.dependency_overrides.clear()
-
-    # Roll back the main transaction. This undoes all changes, including committed savepoints.
-    transaction.rollback()
     session.close()
+    transaction.rollback()
     connection.close()
 
 

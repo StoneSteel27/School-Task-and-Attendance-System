@@ -55,6 +55,19 @@ class User(Base):
         # No cascade here typically; deleting a teacher shouldn't delete records they marked,
         # the FK's ondelete="SET NULL" handles that.
     )
+
+    # --- NEW RELATIONSHIPS FOR Task and Announcement ---
+    created_tasks = relationship(
+        "Task",
+        foreign_keys="Task.created_by_teacher_id",
+        back_populates="created_by_teacher"
+    )
+
+    created_announcements = relationship(
+        "Announcement",
+        foreign_keys="Announcement.created_by_user_id",
+        back_populates="created_by_user"
+    )
     # --- END NEW RELATIONSHIPS ---
 
 

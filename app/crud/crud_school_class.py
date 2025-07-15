@@ -26,7 +26,7 @@ def get_school_class(db: Session, class_id: int) -> SchoolClassSchema | None:  #
 
     teaching_staff_models = [ClassTeachingStaffDetail(**staff_dict) for staff_dict in teaching_staff_dicts]
 
-    class_pydantic_data = SchoolClassSchema.from_orm(db_school_class_orm).model_dump()
+    class_pydantic_data = SchoolClassSchema.model_validate(db_school_class_orm).model_dump()
     class_pydantic_data['teaching_staff'] = teaching_staff_models
 
     return SchoolClassSchema(**class_pydantic_data)
@@ -72,7 +72,7 @@ def get_school_classes(
     for db_school_class_orm in school_classes_orm:
         teaching_staff_dicts = get_teaching_staff_for_class(db=db, school_class=db_school_class_orm)
         teaching_staff_models = [ClassTeachingStaffDetail(**staff_dict) for staff_dict in teaching_staff_dicts]
-        school_class_pydantic_obj = SchoolClassSchema.from_orm(db_school_class_orm)
+        school_class_pydantic_obj = SchoolClassSchema.model_validate(db_school_class_orm)
         school_class_pydantic_obj.teaching_staff = teaching_staff_models
         results.append(school_class_pydantic_obj)
 
@@ -89,7 +89,7 @@ def create_school_class(db: Session, *, class_in: SchoolClassCreate) -> SchoolCl
     db.refresh(db_class_orm)
     # For a newly created class, students and teaching_staff will be empty.
     # SchoolClassSchema.from_orm will correctly initialize them to [] as per schema default.
-    return SchoolClassSchema.from_orm(db_class_orm)
+    return SchoolClassSchema.model_validate(db_class_orm)
 
 
 def update_school_class(
@@ -130,3 +130,11 @@ def get_school_class_orm_by_class_code(db: Session, class_code: str) -> SchoolCl
         .filter(SchoolClass.class_code == class_code)
         .first()
     )
+
+def get_school_class_orm_by_id(db: Session, class_id: int) -> SchoolClass | None: # Returns ORM model
+    return (
+        db.query(SchoolClass)
+        .filter(SchoolClass.id == class_id)
+        .first()
+    )
+

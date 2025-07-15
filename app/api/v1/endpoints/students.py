@@ -122,3 +122,76 @@ def get_student_attendance_records_range(
     # FastAPI will convert the list of ORM objects to List[schemas.StudentAttendanceRecord]
     return attendance_orm_list
 
+
+@router.get(
+    "/{student_roll_number}/tasks",
+    response_model=List[schemas.Task],
+    summary="Get Student's Tasks"
+)
+def get_student_tasks(
+    db: Session = Depends(get_db),
+    db_student: models.User = Depends(deps.get_student_for_view_permission)
+):
+    """
+    Retrieve all tasks assigned to the student's class.
+    Accessible by the student themselves or a superuser.
+    """
+    if db_student.school_class_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student is not currently enrolled in any class, so no tasks are available."
+        )
+    
+    tasks = crud.crud_task.get_tasks_for_class(db, school_class_id=db_student.school_class_id)
+    return tasks
+
+
+@router.get(
+    "/{student_roll_number}/announcements",
+    response_model=List[schemas.Announcement],
+    summary="Get Student's Announcements (School-wide, Class-specific, Subject-specific)"
+)
+def get_student_announcements(
+    db: Session = Depends(get_db),
+    db_student: models.User = Depends(deps.get_student_for_view_permission)
+):
+    """
+    Retrieve all announcements relevant to the student:
+    - School-wide announcements.
+    - Class-specific announcements for their enrolled class.
+    - Subject-specific announcements for their enrolled class.
+    Accessible by the student themselves or a superuser.
+    """
+    announcements: List[schemas.Announcement] = []
+
+    # 1. Get school-wide announcements
+    school_wide_announcements = crud.crud_announcement.get_school_wide_announcements(db)
+    announcements.extend(school_wide_announcements)
+
+    # 2. Get class-specific and subject-specific announcements if student is enrolled in a class
+    if db_student.school_class_id:
+        db_student_class = db_student.enrolled_class
+        if not db_student_class:
+            # Fallback if enrolled_class relationship isn't populated as expected
+            db_student_class = crud.crud_school_class.get_school_class_orm_by_id(db, class_id=db_student.school_class_id)
+
+        if db_student_class:
+            # Get class-specific announcements
+            class_announcements = crud.crud_announcement.get_class_announcements(db, school_class_id=db_student_class.id)
+            announcements.extend(class_announcements)
+
+            # Get subject-specific announcements for all subjects taught in this class
+            # This requires knowing what subjects are taught in the class, which might be complex.
+            # For simplicity, let's assume we can get all announcements for the class and filter by subject later if needed.
+            # Or, if subjects are explicitly linked to students, we could filter by those.
+            # For now, the `get_class_announcements` already covers non-school-wide announcements for the class.
+            # If we need to fetch by subject, we'd need to know the subjects the student is taking.
+            # Given the current schema, a student is in a class, and tasks/announcements are for a class/subject.
+            # The `get_class_announcements` should suffice for now, as it fetches all non-school-wide for the class.
+            pass # No additional CRUD call needed for subject-specific if get_class_announcements is broad enough
+
+    # Remove duplicates if any (e.g., if an announcement is mistakenly marked both school-wide and class-specific)
+    # This is a simple deduplication based on ID, assuming Announcement objects are hashable or comparable by ID.
+    unique_announcements = {announcement.id: announcement for announcement in announcements}.values()
+    return list(unique_announcements)
+
