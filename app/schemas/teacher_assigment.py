@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List
 
 class TeacherAssignmentBase(BaseModel):
@@ -12,5 +12,4 @@ class TeacherAssignmentCreate(TeacherAssignmentBase):
 class TeacherAssignmentSubject(BaseModel): # Represents a subject a teacher teaches in a class
     subject: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)  # Use model_config

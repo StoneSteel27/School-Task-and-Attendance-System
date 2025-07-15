@@ -1,8 +1,8 @@
+# app/models/school_class.py
 from sqlalchemy import Column, Integer, String, ForeignKey, Table, PrimaryKeyConstraint
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship # Make sure this is imported
 
 from app.db.base_class import Base
-
 
 class SchoolClass(Base):
     __tablename__ = "schoolclasses"
@@ -13,6 +13,12 @@ class SchoolClass(Base):
     grade = Column(String, nullable=True)
     section = Column(String, nullable=True)
     description = Column(String, nullable=True)
+
+    homeroom_teacher_id = Column(
+        Integer,
+        ForeignKey("users.id", name="fk_schoolclasses_homeroom_teacher_id_users_id", ondelete="SET NULL"),
+        nullable=True
+    )
 
     schedule_slots = relationship(
         "ClassScheduleSlot",
@@ -26,13 +32,26 @@ class SchoolClass(Base):
     )
 
     teachers_association = relationship(
-        "User",  # The User model
-        secondary=lambda: teacher_class_association,
-        backref="teaching_classes_association")
+        "User",
+        secondary="teacher_class_association", # String reference
+        backref="teaching_classes_association" # backref is fine for simple cases
+    )
+
+    homeroom_teacher = relationship(
+        "User",
+        back_populates="homeroom_classes_led",
+        foreign_keys=[homeroom_teacher_id]
+    )
+
+    student_attendance_records = relationship(
+        "StudentAttendance", # Use string to avoid circular import
+        foreign_keys="StudentAttendance.school_class_id", # String reference
+        back_populates="school_class",
+        cascade="all, delete-orphan" # If class is deleted, its attendance records are also deleted
+    )
 
     def __repr__(self):
         return f"<SchoolClass(id={self.id}, class_code='{self.class_code}', name='{self.name}')>"
-
 
 teacher_class_association = Table(
     'teacher_class_association', Base.metadata,

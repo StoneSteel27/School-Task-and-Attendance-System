@@ -1,11 +1,11 @@
 from datetime import date
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Path
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
-from app.api import deps # deps will now contain get_student_for_view_permission
+from app.api import deps
 from app.db.session import get_db
 
 router = APIRouter()
@@ -74,3 +74,51 @@ def get_student_schedule(
         return daily_schedule_slots
     else:
         return weekly_slots_orm
+
+@router.get(
+    "/{student_roll_number}/attendance", # Path relative to /students prefix
+    response_model=List[schemas.StudentAttendanceRecord],
+    summary="Get Student's Attendance Records over a Date Range"
+)
+def get_student_attendance_records_range(
+    # student_roll_number is part of the path and handled by the dependency
+    start_date_str: str = Query(..., alias="startDate", description="Start date in YYYY-MM-DD format."),
+    end_date_str: str = Query(..., alias="endDate", description="End date in YYYY-MM-DD format."),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200), # Example pagination limits
+    db: Session = Depends(get_db),
+    # This dependency fetches the student by roll_number from the path
+    # and ensures the current_user is either the student themselves or a superuser.
+    target_student: models.User = Depends(deps.get_student_for_view_permission)
+):
+    """
+    Retrieve attendance records for a specific student over a given date range.
+    Accessible by the student themselves or a superuser.
+    """
+    try:
+        start_date = date.fromisoformat(start_date_str)
+        end_date = date.fromisoformat(end_date_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid date format. Use YYYY-MM-DD for startDate and endDate."
+        )
+
+    if end_date < start_date:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="End date cannot be before start date."
+        )
+
+    # target_student is the ORM model of the student, already authorized
+    attendance_orm_list = crud.crud_student_attendance.get_attendance_for_student_date_range(
+        db=db,
+        student_id=target_student.id,
+        start_date=start_date,
+        end_date=end_date,
+        skip=skip,
+        limit=limit
+    )
+    # FastAPI will convert the list of ORM objects to List[schemas.StudentAttendanceRecord]
+    return attendance_orm_list
+

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 
 from app.schemas.user import User as UserSchema
@@ -22,6 +22,8 @@ class SchoolClassUpdate(BaseModel):  # Doesn't inherit Base to make all fields t
     grade: Optional[str] = None
     section: Optional[str] = None
     description: Optional[str] = None
+    homeroom_teacher_id: Optional[int] = Field(None,
+                                               description="ID of the user to be assigned as homeroom teacher.")  # <<<< NEWLY ADDED
 
 
 
@@ -59,9 +61,9 @@ class SchoolClass(SchoolClassBase):  # Inherits from SchoolClassBase
     id: int
     students: List[UserSchema] = []
     teaching_staff: List[ClassTeachingStaffDetail] = []
+    homeroom_teacher_id: Optional[int] = Field(None, description="ID of the assigned homeroom teacher.")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)  # Use model_config
 
 
 class BulkStudentRollNumbers(BaseModel):
@@ -73,5 +75,4 @@ class StudentAssignmentStatus(BaseModel):
     detail: Optional[str] = None
     conflicting_class_code: Optional[str] = None # To indicate which class the student is already in, if applicable during assignment
 
-    class Config:
-        from_attributes = True # Generally good practice for response models
+    model_config = ConfigDict(from_attributes=True)  # Use model_config

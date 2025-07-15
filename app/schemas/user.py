@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from typing import Optional
 
 
@@ -27,8 +27,7 @@ class UserUpdate(UserBase):
 class User(UserBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)  # Use model_config
 
 
 class UserInDB(User):

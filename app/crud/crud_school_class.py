@@ -49,9 +49,9 @@ def get_school_class_by_class_code(db: Session, class_code: str) -> SchoolClassS
     teaching_staff_dicts = get_teaching_staff_for_class(db=db, school_class=db_school_class_orm)
     teaching_staff_models = [ClassTeachingStaffDetail(**staff_dict) for staff_dict in teaching_staff_dicts]
 
-    # Use .from_orm() and then add/replace the teaching_staff attribute.
+    # Use .model_validate and then add/replace the teaching_staff attribute.
     # This leverages Pydantic's ORM mapping for most fields and then injects our custom-fetched list.
-    school_class_pydantic_obj = SchoolClassSchema.from_orm(db_school_class_orm)
+    school_class_pydantic_obj = SchoolClassSchema.model_validate(db_school_class_orm)
     school_class_pydantic_obj.teaching_staff = teaching_staff_models # Directly set the pydantic attribute
 
     return school_class_pydantic_obj

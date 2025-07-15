@@ -1,6 +1,6 @@
 from datetime import date
 from typing import List, Optional
-from pydantic import BaseModel, Field, conint, model_validator  # Add model_validator for Pydantic v2+
+from pydantic import BaseModel, Field, conint, model_validator, ConfigDict  # Add model_validator for Pydantic v2+
 
 
 # If you decide to embed full teacher details in schedule responses:
@@ -51,8 +51,7 @@ class ClassScheduleSlot(ClassScheduleSlotBase):  # Full response schema for a sl
     # If you want to include full teacher details:
     # teacher: Optional[UserSchema] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)  # Use model_config
 
 
 # --- Holiday Schemas ---
@@ -102,8 +101,7 @@ class HolidayUpdate(BaseModel):
 class Holiday(HolidayBase):  # Full response schema for a holiday period
     id: int = Field(..., description="Unique ID of the holiday period.")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)  # Use model_config
 
 
 class HolidayBulkCreate(BaseModel):
