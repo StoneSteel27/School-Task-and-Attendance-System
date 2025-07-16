@@ -47,3 +47,11 @@ backend, that will provide a secure login to the teacher, principal and students
   - view details of all teachers and students
 
 
+## Features
+### Teacher's Attendance
+- teacher's attendance is recorded when they login into our portal. 
+- yes, this can be a security and organizational flaw, so what i have planned is,
+  - we first have a simple signup, in the teacher's mobile phone. with which we will initate a webauthn with teacher's finger print.
+  - it will generate few recovery codes, so that teacher can still login even if they dont have thier phone in thier hand. and they are a one-use code, on use, will send a notification to admin about it usage
+  - and we will also have a system to login into other devices like thier laptop, by scaning a qr code, that is viewed in the other device's screen.
+  - and the attendance feature will be having like two options "check-in" and "check-out", which will check the teacher's location is within geofenced area, with thier gps.

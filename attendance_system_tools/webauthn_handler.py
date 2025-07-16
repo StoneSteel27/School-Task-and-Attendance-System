@@ -1,6 +1,7 @@
 # attendance_system_tools/webauthn_handler.py
 
 import json
+import base64
 from typing import List, Dict, Any # For type hinting
 from webauthn import (
     generate_registration_options,
@@ -8,8 +9,6 @@ from webauthn import (
     generate_authentication_options,
     verify_authentication_response,
     options_to_json,
-    base64url_to_bytes,
-    base64url_encode,
 )
 from webauthn.helpers.structs import (
     AttestationConveyancePreference,
@@ -20,11 +19,13 @@ from webauthn.helpers.structs import (
     UserVerificationRequirement,
     RegistrationCredential,
     AuthenticationCredential, # For parsing the client's authentication response
-    VerifiedRegistrationCredential,
     PublicKeyCredentialDescriptor, # For allow_credentials in auth options
 )
-from webauthn.helpers.cose import COSEAlgorithmIdentifier
 from webauthn.helpers.exceptions import WebAuthnException
+
+
+def base64url_encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b'=').decode('utf-8')
 
 # A (very) simple in-memory store for demonstration purposes.
 # In a real application, you would use a database to store user credentials.
@@ -71,7 +72,7 @@ class WebAuthnHandler:
             authenticator_selection=AuthenticatorSelectionCriteria(
                 authenticator_attachment=AuthenticatorAttachment.PLATFORM,
                 user_verification=UserVerificationRequirement.REQUIRED,
-                resident_key=True
+                require_resident_key=True
             ),
             timeout=60000,
         )
@@ -98,12 +99,12 @@ class WebAuthnHandler:
         original_challenge_bytes = bytes.fromhex(stored_challenge_hex)
 
         try:
-            registration_credential = RegistrationCredential.parse_raw(credential_creation_response_json)
+            registration_credential = RegistrationCredential(**json.loads(credential_creation_response_json))
         except Exception as e:
             raise ValueError(f"Failed to parse client registration response: {e}")
 
         try:
-            verified_credential_data: VerifiedRegistrationCredential = verify_registration_response(
+            verified_credential_data: RegistrationCredential = verify_registration_response(
                 credential=registration_credential,
                 expected_challenge=original_challenge_bytes,
                 expected_origin=self.rp_origin,
@@ -230,7 +231,7 @@ class WebAuthnHandler:
         original_challenge_bytes = bytes.fromhex(stored_challenge_hex)
 
         try:
-            auth_credential_obj = AuthenticationCredential.parse_raw(authentication_response_json)
+            auth_credential_obj = AuthenticationCredential(**json.loads(authentication_response_json))
         except Exception as e:
             raise ValueError(f"Failed to parse client authentication response: {e}")
 
