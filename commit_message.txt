@@ -1,0 +1,19 @@
+feat(webauthn): Update WebAuthn handler and fix test suite
+
+This commit refactors the `WebAuthnHandler` to align with the latest version of the `webauthn` library and resolves a series of test failures.
+
+The key changes are:
+
+- **Updated WebAuthn Integration:**
+  - Replaced direct parsing of JSON responses with the library's `parse_registration_credential_json` and `parse_authentication_credential_json` helpers for improved reliability.
+  - Correctly handle `transports` by converting them to `AuthenticatorTransport` enums when creating `PublicKeyCredentialDescriptor`.
+  - Use the `PublicKeyCredentialType.PUBLIC_KEY` enum for the `type` field in `PublicKeyCredentialDescriptor` to prevent `AttributeError` in the `options_to_json` helper.
+  - Updated the `verify_authentication_response` call to correctly extract the `new_sign_count` from the returned object.
+
+- **Test Suite Fixes:**
+  - Resolved `ImportError`s by removing imports for `VerifiedRegistration` and `VerifiedAuthentication`, which are no longer part of the public API.
+  - Updated mock objects in `test_tools.py` to accurately reflect the data structures returned by the `webauthn` library, fixing multiple `AttributeError` and `TypeError` exceptions.
+  - Corrected a `NameError` by removing a reference to a non-existent `user_handle_bytes` variable in a mock response.
+
+- **Geofence Logic Correction:**
+  - Fixed a bug in `GeofenceManager` by replacing `polygon.contains()` with `polygon.intersects()` to correctly identify when a point lies on the boundary of a geofence.
