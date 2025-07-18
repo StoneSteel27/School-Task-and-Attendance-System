@@ -22,19 +22,29 @@ def get_task(db: Session, task_id: int) -> Optional[Task]:
     )
 
 
-def get_tasks_for_class(db: Session, school_class_id: int, skip: int = 0, limit: int = 100) -> List[Task]:
+def get_tasks_for_class(db: Session, school_class_id: int, student_id: int = None, skip: int = 0, limit: int = 100) -> List[Task]:
     """Retrieve all tasks for a specific school class."""
-    return (
-        db.query(Task)
+    query = (
+        db.query(Task, StudentTaskSubmission.status, StudentTaskSubmission.submission_url, StudentTaskSubmission.submitted_at)
+        .outerjoin(StudentTaskSubmission, (Task.id == StudentTaskSubmission.task_id) & (StudentTaskSubmission.student_id == student_id))
         .options(
             joinedload(Task.created_by_teacher)
         )
         .filter(Task.school_class_id == school_class_id)
         .order_by(Task.due_date.asc(), Task.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
     )
+
+    results = query.offset(skip).limit(limit).all()
+
+    tasks = []
+    for task, status, submission_url, submitted_at in results:
+        task.submission_status = status
+        task.submission_url = submission_url
+        task.submitted_at = submitted_at
+        tasks.append(task)
+
+    return tasks
+
 
 
 def get_tasks_created_by_teacher(db: Session, teacher_id: int, skip: int = 0, limit: int = 100) -> List[Task]:

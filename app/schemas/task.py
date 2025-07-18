@@ -67,3 +67,9 @@ class StudentTaskSubmission(StudentTaskSubmissionBase):
     approved_at: Optional[datetime] = Field(None, description="Timestamp when the task was approved.")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TaskWithSubmissionStatus(Task):
+    submission_status: Optional[TaskStatus] = Field(None, description="The current submission status for the student.")
+    submission_url: Optional[str] = Field(None, description="The URL of the student's submission.")
+    submitted_at: Optional[datetime] = Field(None, description="The timestamp of the student's submission.")

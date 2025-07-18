@@ -132,7 +132,7 @@ def get_student_attendance_records_range(
 
 @router.get(
     "/me/tasks",
-    response_model=List[schemas.Task],
+    response_model=List[schemas.TaskWithSubmissionStatus],
     summary="Get Student's Tasks"
 )
 def get_student_tasks(
@@ -156,8 +156,9 @@ def get_student_tasks(
             detail="Student is not currently enrolled in any class, so no tasks are available."
         )
     
-    tasks = crud.crud_task.get_tasks_for_class(db, school_class_id=db_student.school_class_id)
+    tasks = crud.crud_task.get_tasks_for_class(db, school_class_id=db_student.school_class_id, student_id=db_student.id)
     return tasks
+
 
 
 @router.get(
