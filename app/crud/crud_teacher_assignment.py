@@ -63,11 +63,12 @@ def unassign_teacher_from_class_subject(
 
 def get_assignments_for_teacher(
         db: Session, *, teacher: User
-) -> list[dict]:  # Returns a list of dicts like {"class_code": "X", "class_name": "Y", "subject": "Z"}
+) -> list[dict]:
     """
     Retrieves all class/subject assignments for a given teacher.
     """
     query_result = db.query(
+        SchoolClass.id,
         SchoolClass.class_code,
         SchoolClass.name,
         teacher_class_association.c.subject
@@ -79,7 +80,12 @@ def get_assignments_for_teacher(
     ).order_by(SchoolClass.class_code, teacher_class_association.c.subject).all()
 
     return [
-        {"school_class_code": row.class_code, "school_class_name": row.name, "subject": row.subject}
+        {
+            "school_class_id": row.id,
+            "school_class_code": row.class_code,
+            "school_class_name": row.name,
+            "subject": row.subject
+        }
         for row in query_result
     ]
 

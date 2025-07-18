@@ -4,15 +4,7 @@ This document tracks the necessary improvements and bug fixes for the School Tas
 
 ## Teacher Features
 
-### 1. Implement Teacher Schedule Endpoint
-
-- **Issue:** There is no endpoint for a teacher to view their own daily or weekly class schedule.
-- **Required Fix:**
-    1.  **Create an Endpoint:** Add a new endpoint, such as `/api/v1/teachers/me/schedule`.
-    2.  **Implement Logic:** This endpoint should query the `ClassScheduleSlot` model, filtering for slots where the `teacher_id` matches the current user's ID.
-    3.  **Reuse Schema:** The existing `schemas.ClassScheduleSlot` can likely be reused for the response.
-
-### 2. Implement Student Search for Teachers
+### 1. Implement Student Search for Teachers
 
 - **Issue:** Teachers need the ability to search for students and view their details, but no such endpoint exists.
 - **Required Fix:**
@@ -20,7 +12,7 @@ This document tracks the necessary improvements and bug fixes for the School Tas
     2.  **Implement Search Logic:** The endpoint should allow searching for students by name, roll number, or class. It should only return students that the teacher is authorized to see (e.g., students in their classes).
     3.  **Define Response Schema:** Create a Pydantic schema for the student details to be returned in the search results.
 
-### 3. Implement Task Submission Review for Teachers
+### 2. Implement Task Submission Review for Teachers
 
 - **Issue:** Teachers can create tasks, but they cannot view student submissions, grade them, or approve them.
 - **Required Fix:**

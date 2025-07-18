@@ -281,3 +281,32 @@ def bulk_unassign_students_from_class(
                     res.detail = f"Database error during batch commit for student '{res.student_roll_number}': {str(e)}"
 
     return results
+
+
+def search_students_for_teacher(
+    db: Session,
+    *,
+    teacher_class_ids: List[int],
+    name: str | None = None,
+    roll_number: str | None = None,
+    class_code: str | None = None,
+) -> List[User]:
+    """
+    Searches for students within the classes a teacher is assigned to.
+    """
+    from app.models.school_class import SchoolClass as SchoolClassModel
+
+    query = (
+        db.query(User)
+        .filter(User.role == "student")
+        .filter(User.school_class_id.in_(teacher_class_ids))
+    )
+
+    if name:
+        query = query.filter(User.full_name.ilike(f"%{name}%"))
+    if roll_number:
+        query = query.filter(User.roll_number == roll_number)
+    if class_code:
+        query = query.join(SchoolClassModel, User.school_class_id == SchoolClassModel.id).filter(SchoolClassModel.class_code == class_code)
+
+    return query.all()
