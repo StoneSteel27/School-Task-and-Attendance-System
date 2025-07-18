@@ -3,16 +3,7 @@
 This document tracks the necessary improvements and bug fixes for the School Task and Attendance System.
 
 ## Teacher Features
-
-### 1. Implement Student Search for Teachers
-
-- **Issue:** Teachers need the ability to search for students and view their details, but no such endpoint exists.
-- **Required Fix:**
-    1.  **Create an Endpoint:** Add a new endpoint, e.g., `/api/v1/teachers/students/search`.
-    2.  **Implement Search Logic:** The endpoint should allow searching for students by name, roll number, or class. It should only return students that the teacher is authorized to see (e.g., students in their classes).
-    3.  **Define Response Schema:** Create a Pydantic schema for the student details to be returned in the search results.
-
-### 2. Implement Task Submission Review for Teachers
+### 1. Implement Task Submission Review for Teachers
 
 - **Issue:** Teachers can create tasks, but they cannot view student submissions, grade them, or approve them.
 - **Required Fix:**
