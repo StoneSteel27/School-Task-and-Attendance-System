@@ -2,15 +2,7 @@
 
 This document tracks the necessary improvements and bug fixes for the School Task and Attendance System.
 ## Student Features
-
-### 1. Expose Task Submission Status to Students
-
-- **Issue:** While students can submit tasks, they cannot view the current status of their submissions (e.g., `pending`, `submitted`, `approved`).
-- **Required Fix:**
-    1.  **Enhance Task Endpoints:** Modify the existing `/me/tasks` endpoint or create a new one (e.g., `/me/submissions`) to include the submission status for each task.
-    2.  **Update Schemas:** Adjust the Pydantic schemas to include the `submission_status` field in the response.
-
-### 2. Clarify and Implement Announcement Attachments
+### 1. Clarify and Implement Announcement Attachments
 
 - **Issue:** The functionality for handling and delivering announcement attachments is not fully implemented or clear.
 - **Required Fix:**
