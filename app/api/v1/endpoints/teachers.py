@@ -32,28 +32,24 @@ def get_teacher_teaching_load_endpoint(
     return assignments
 
 @router.get(
-    "/{teacher_roll_number}/schedule",
+    "/me/schedule",
     response_model=List[schemas.ClassScheduleSlot],
-    summary="Get Teacher's Schedule"
+    summary="Get Current Teacher's Schedule"
 )
 def get_teacher_schedule(
-        # teacher_roll_number is handled by the dependency
         target_date: Optional[date] = Query(None,
                                             description="If provided, returns the schedule for this specific date. Otherwise, weekly template based on day_of_week or all."),
         day_of_week: Optional[int] = Query(None,
                                            description="Filter by specific day of the week (0=Monday, 6=Sunday). Used if target_date is not provided.",
                                            ge=0, le=6),
         db: Session = Depends(get_db),
-        # REPLACED: current_user: models.User = Depends(deps.get_current_active_user)
-        # WITH:
-        db_teacher: models.User = Depends(deps.get_teacher_for_view_permission) # NEW Dependency
+        current_teacher: models.User = Depends(deps.get_current_active_teacher)
 ):
     """
     Get the schedule for a specific teacher (by teacher_roll_number in path).
     - Access: Teacher themselves or a Superuser (enforced by get_teacher_for_view_permission).
     """
-    # db_teacher is the authorized teacher ORM object.
-    # Role check (role == "teacher") is also handled by the dependency.
+    # current_teacher is the authorized teacher ORM object.
 
     if target_date and day_of_week is not None:
         raise HTTPException(
@@ -66,7 +62,7 @@ def get_teacher_schedule(
     if target_date:
         day_of_week_from_date = target_date.weekday()
         potential_slots_for_day_orm = crud.crud_schedule.get_schedule_slots_for_teacher(
-            db, teacher_id=db_teacher.id, day_of_week=day_of_week_from_date
+            db, teacher_id=current_teacher.id, day_of_week=day_of_week_from_date
         ) # This crud already eager loads school_class
         for slot_orm in potential_slots_for_day_orm:
             if not slot_orm.school_class:
@@ -78,10 +74,10 @@ def get_teacher_schedule(
                 slots_to_return_orm.append(slot_orm)
     elif day_of_week is not None:
         slots_to_return_orm = crud.crud_schedule.get_schedule_slots_for_teacher(
-            db, teacher_id=db_teacher.id, day_of_week=day_of_week
+            db, teacher_id=current_teacher.id, day_of_week=day_of_week
         ) # This crud already eager loads school_class
     else:
-        slots_to_return_orm = crud.crud_schedule.get_schedule_slots_for_teacher(db, teacher_id=db_teacher.id)
+        slots_to_return_orm = crud.crud_schedule.get_schedule_slots_for_teacher(db, teacher_id=current_teacher.id)
         # This crud already eager loads school_class
 
     return slots_to_return_orm

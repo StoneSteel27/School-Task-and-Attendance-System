@@ -2,29 +2,6 @@
 
 This document tracks the necessary improvements and bug fixes for the School Task and Attendance System.
 
-## High Priority - Core Functionality
-
-### 1. Refactor WebAuthn Implementation to Use Database
-
-- **Status:** DONE
-- **Issue:** The current WebAuthn implementation in `attendance_system_tools/webauthn_handler.py` uses a temporary, in-memory dictionary (`TEMP_USER_CREDENTIALS_STORE`) to store user credential data. This data is lost every time the application restarts, making the feature non-functional for persistent use.
-- **Required Fix:**
-    1.  **Create a Database Model:** Define a new SQLAlchemy model `WebAuthnCredential` to store credential information (e.g., `user_id`, `credential_id`, `public_key`, `sign_count`).
-    2.  **Create CRUD Functions:** Implement Create, Read, Update, and Delete functions for the `WebAuthnCredential` model.
-    3.  **Refactor `WebAuthnHandler`:** Modify the `WebAuthnHandler` class to replace all interactions with `TEMP_USER_CREDENTIALS_STORE` with calls to the new CRUD functions, persisting data in the database.
-    4.  **Refactor Challenge Storage:** Replace the `TEMP_CHALLENGE_STORE` with a database-backed solution to persist challenges across requests.
-
-### 2. Refactor QR Code Login to Use Database
-
-- **Issue:** The QR code login flow in `app/api/v1/endpoints/qr_login.py` relies on an in-memory dictionary (`QR_LOGIN_SESSIONS`) to manage the state of login attempts. This is not a persistent storage solution.
-- **Required Fix:**
-    1.  **Create a Database Model:** Define a new SQLAlchemy model `QRLoginSession` to store session data (e.g., `token`, `status`, `user_id`, `created_at`).
-    2.  **Create CRUD Functions:** Implement functions to create, retrieve, and update `QRLoginSession` records in the database.
-    3.  **Refactor QR Login Endpoints:** Modify the `/qr-login/start`, `/qr-login/approve`, and `/qr-login/poll` endpoints to use the database for managing session state instead of the in-memory dictionary.
-    4.  **Implement a Cleanup Mechanism:** Add a scheduled task or a background process to periodically delete expired QR login sessions from the database.
-
----
-
 ## Teacher Features
 
 ### 1. Implement Teacher Schedule Endpoint

@@ -436,3 +436,105 @@ def test_student_views_tasks_and_announcements(
     assert not any(a["title"] == "Class Trip" for a in s2_announcements)
 
     pass
+
+
+def test_teacher_views_own_schedule(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    db: SQLAlchemySession
+):
+    admin_headers = superuser_token_headers
+
+    # 1. SETUP PHASE
+    # Create School Class
+    class_code = _random_roll_number("CLS-TCH-SCH")
+    class_name = f"Teacher Schedule Class {class_code}"
+    created_class = _create_class_util(client, admin_headers, class_code, class_name, "7", "A")
+    school_class_id = created_class["id"]
+
+    # Create Teacher
+    teacher_email = _random_email()
+    teacher_roll = _random_roll_number("TCH-SCH")
+    teacher_pwd = _random_password()
+    teacher_full_name = f"Teacher {teacher_roll}"
+    created_teacher = _create_user_util(
+        client, admin_headers, teacher_email, teacher_roll, teacher_pwd, teacher_full_name, "teacher"
+    )
+    teacher_id = created_teacher["id"]
+    teacher_auth_headers = _get_auth_headers_for_user(client, teacher_email, teacher_pwd)
+
+    # Assign teacher to class (as homeroom teacher for simplicity, though not strictly needed for schedule)
+    _assign_homeroom_teacher_util(client, admin_headers, class_code, teacher_id)
+
+    # Define schedule for the class, assigning the teacher to some slots
+    today = datetime.date.today()
+    monday_date = today - datetime.timedelta(days=today.weekday()) # Get current week's Monday
+
+    schedule_slots_payload = [
+        {
+            "subject_name": "Physics",
+            "day_of_week": 0, # Monday
+            "period_number": 1,
+            "teacher_id": teacher_id
+        },
+        {
+            "subject_name": "Chemistry",
+            "day_of_week": 2, # Wednesday
+            "period_number": 3,
+            "teacher_id": teacher_id
+        },
+        {
+            "subject_name": "Biology",
+            "day_of_week": 0, # Monday
+            "period_number": 2,
+            "teacher_id": teacher_id
+        }
+    ]
+    _set_class_schedule_util(client, admin_headers, class_code, schedule_slots_payload)
+
+    # 2. TEACHER ACTIONS
+    # Test 2.1: Teacher views their weekly schedule
+    response_weekly_schedule = client.get(
+        f"{settings.API_V1_STR}/teachers/me/schedule",
+        headers=teacher_auth_headers
+    )
+    assert response_weekly_schedule.status_code == 200
+    data_weekly = response_weekly_schedule.json()
+    assert len(data_weekly) == 3 # Physics (Mon), Chemistry (Wed), Biology (Mon)
+    assert any(s["subject_name"] == "Physics" and s["day_of_week"] == 0 for s in data_weekly)
+    assert any(s["subject_name"] == "Chemistry" and s["day_of_week"] == 2 for s in data_weekly)
+    assert any(s["subject_name"] == "Biology" and s["day_of_week"] == 0 for s in data_weekly)
+
+    # Test 2.2: Teacher views schedule for specific day (Monday)
+    response_daily_schedule = client.get(
+        f"{settings.API_V1_STR}/teachers/me/schedule?target_date={monday_date.isoformat()}",
+        headers=teacher_auth_headers
+    )
+    assert response_daily_schedule.status_code == 200
+    data_daily = response_daily_schedule.json()
+    assert len(data_daily) == 2 # Physics and Biology on Monday
+    assert any(s["subject_name"] == "Physics" for s in data_daily)
+    assert any(s["subject_name"] == "Biology" for s in data_daily)
+
+    # Test 2.3: Teacher views schedule for a day with no classes (e.g., Tuesday)
+    tuesday_date = monday_date + datetime.timedelta(days=1)
+    response_empty_daily_schedule = client.get(
+        f"{settings.API_V1_STR}/teachers/me/schedule?target_date={tuesday_date.isoformat()}",
+        headers=teacher_auth_headers
+    )
+    assert response_empty_daily_schedule.status_code == 200
+    data_empty_daily = response_empty_daily_schedule.json()
+    assert len(data_empty_daily) == 0
+
+    # Test 2.4: Teacher views schedule for a specific day of week (Wednesday)
+    response_day_of_week_schedule = client.get(
+        f"{settings.API_V1_STR}/teachers/me/schedule?day_of_week=2", # Wednesday
+        headers=teacher_auth_headers
+    )
+    assert response_day_of_week_schedule.status_code == 200
+    data_day_of_week = response_day_of_week_schedule.json()
+    assert len(data_day_of_week) == 1
+    assert data_day_of_week[0]["subject_name"] == "Chemistry"
+    assert data_day_of_week[0]["day_of_week"] == 2
+
+    pass

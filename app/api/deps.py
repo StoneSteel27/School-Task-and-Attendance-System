@@ -57,6 +57,20 @@ async def get_current_active_superuser(
     return current_user
 
 
+async def get_current_active_teacher(
+        current_user: UserModel = Depends(get_current_active_user)
+) -> UserModel:
+    """
+    Dependency that builds on get_current_active_user to ensure the user is a teacher.
+    """
+    if current_user.role != "teacher":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user doesn't have enough privileges (not a teacher)"
+        )
+    return current_user
+
+
 # --- NEW PERMISSION DEPENDENCIES ---
 
 async def get_student_for_view_permission(
