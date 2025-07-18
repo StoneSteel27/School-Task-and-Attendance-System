@@ -13,6 +13,8 @@ from app.models.user import User as UserModel
 from app.schemas.user import UserCreate
 from app.core.security import get_password_hash
 from app.crud import crud_user
+from app.models.school_class import SchoolClass, teacher_class_association
+
 
 # --- Test Database Setup ---
 SQLALCHEMY_DATABASE_URL_TEST = "sqlite:///:memory:"
@@ -98,7 +100,49 @@ def test_superuser(db: SQLAlchemySession) -> UserModel: # Use the overridden db 
     return user
 
 @pytest.fixture(scope="function")
-def test_normal_user(db: SQLAlchemySession) -> UserModel: # Use the overridden db fixture
+def test_teacher(db: SQLAlchemySession) -> UserModel:
+    email = "testteacher@example.com"
+    password = "testteacherpass"
+    roll_number = "TEST_TEACHER_001"
+    full_name = "Test Teacher User"
+
+    user = crud_user.get_user_by_email(db, email=email)
+    if not user:
+        user_in_create = UserCreate(
+            email=email,
+            password=password,
+            full_name=full_name,
+            roll_number=roll_number,
+            is_superuser=False,
+            is_active=True,
+            role="teacher"
+        )
+        hashed_password = get_password_hash(password)
+        user = crud_user.create_user(db=db, user_in=user_in_create, password_hash=hashed_password)
+    else:
+        user.is_superuser = False
+        user.is_active = True
+        user.role = "teacher"
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    return user
+
+
+@pytest.fixture(scope="function")
+def test_normal_user(db: SQLAlchemySession, test_teacher: UserModel) -> UserModel: # Use the overridden db fixture
+    # Create a class
+    school_class = SchoolClass(class_code="C-101", name="Test Class", grade="10", section="A")
+    db.add(school_class)
+    db.commit()
+    db.refresh(school_class)
+
+    # Associate teacher with subjects for the class
+    db.execute(teacher_class_association.insert().values(teacher_id=test_teacher.id, class_id=school_class.id, subject="Math"))
+    db.execute(teacher_class_association.insert().values(teacher_id=test_teacher.id, class_id=school_class.id, subject="Science"))
+    db.commit()
+
+
     email = "testuser@example.com"
     password = "testuserpass"
     roll_number = "TEST_USER_001"
@@ -117,14 +161,11 @@ def test_normal_user(db: SQLAlchemySession) -> UserModel: # Use the overridden d
         )
         hashed_password = get_password_hash(password)
         user = crud_user.create_user(db=db, user_in=user_in_create, password_hash=hashed_password)
-    else: # Ensure existing user is normal user and active
-        user.is_superuser = False
-        user.is_active = True
-        user.role = "student"
-        # user.hashed_password = get_password_hash(password) # If password reset needed
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+
+    user.school_class_id = school_class.id
+    db.add(user)
+    db.commit()
+    db.refresh(user)
     return user
 
 # --- Token Fixtures ---

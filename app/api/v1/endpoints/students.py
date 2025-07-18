@@ -9,10 +9,13 @@ import os
 from app import crud, models, schemas
 from app.api import deps
 from app.db.session import get_db
+from app.schemas.subject import Subject
+from app.crud import crud_subject
 
 router = APIRouter()
 
 SUBMISSIONS_DIR = "submissions"
+
 
 # Ensure the submissions directory exists
 if not os.path.exists(SUBMISSIONS_DIR):
@@ -287,4 +290,28 @@ async def submit_task_file(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Could not update task submission in database: {e}"
         )
+
+
+@router.get("/me/subjects", response_model=List[Subject])
+def list_student_subjects(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(deps.get_current_active_user),
+):
+    """
+    Get a list of subjects for the current student's class.
+    """
+    if current_user.role != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can view their subjects.",
+        )
+
+    if not current_user.school_class_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student is not enrolled in any class.",
+        )
+
+    subjects = crud_subject.get_subjects_by_class(db, class_id=current_user.school_class_id)
+    return subjects
 
