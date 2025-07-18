@@ -1,20 +1,6 @@
 # Project TODO List
 
 This document tracks the necessary improvements and bug fixes for the School Task and Attendance System.
-
-## Teacher Features
-### 1. Implement Task Submission Review for Teachers
-
-- **Issue:** Teachers can create tasks, but they cannot view student submissions, grade them, or approve them.
-- **Required Fix:**
-    1.  **Create Endpoints:**
-        -   `GET /api/v1/tasks/{task_id}/submissions`: To list all submissions for a specific task.
-        -   `PUT /api/v1/submissions/{submission_id}/approve`: To mark a submission as "approved".
-    2.  **Implement Logic:** The endpoints must verify that the teacher is authorized to manage the task and its submissions.
-    3.  **Update Schemas:** Create or update schemas to handle the submission data and the approval status change.
-
----
-
 ## Student Features
 
 ### 1. Implement "List Subjects" Endpoint
