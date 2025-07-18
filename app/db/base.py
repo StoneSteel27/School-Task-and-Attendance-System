@@ -9,3 +9,4 @@ from app.models.student_attendance import StudentAttendance
 from app.models.task import Task, StudentTaskSubmission
 from app.models.teacher_attendance import TeacherAttendance
 from app.models.webauthn import WebAuthnCredential, WebAuthnChallenge
+from app.models.qr_login_session import QRLoginSession

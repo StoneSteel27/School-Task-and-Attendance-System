@@ -170,18 +170,4 @@ def load_geofence_config():
 # Load the geofences once on startup
 SCHOOL_GEOFENCES = load_geofence_config()
 
-# --- In-Memory Stores for Auth Flows ---
 
-# Simple in-memory store for QR login sessions.
-# In a production environment, this should be replaced with a more robust
-# solution like Redis or a database table with TTL.
-# Structure:
-# {
-#   "qr_token_str": {
-#     "status": "pending" | "approved" | "expired",
-#     "user_id": int | None,
-#     "access_token": str | None,
-#     "created_at": datetime
-#   }
-# }
-QR_LOGIN_SESSIONS = {}
