@@ -133,11 +133,13 @@ from attendance_system_tools.recovery_codes_manager import RecoveryCodesManager
 from attendance_system_tools.geofence_manager import GeofenceManager
 
 # WebAuthn
-webauthn_handler = WebAuthnHandler(
-    rp_id="localhost",  # For local development
-    rp_name="School Attendance System",
-    rp_origin="http://localhost:3000"  # Assuming a React frontend running on 3000
-)
+def get_webauthn_handler(db: Session = Depends(get_db)) -> WebAuthnHandler:
+    return WebAuthnHandler(
+        rp_id="localhost",  # For local development
+        rp_name="School Attendance System",
+        rp_origin="http://localhost:3000",  # Assuming a React frontend running on 3000
+        db=db
+    )
 
 # QR Code
 qr_code_manager = QRCodeManager()

@@ -6,6 +6,7 @@ This document tracks the necessary improvements and bug fixes for the School Tas
 
 ### 1. Refactor WebAuthn Implementation to Use Database
 
+- **Status:** DONE
 - **Issue:** The current WebAuthn implementation in `attendance_system_tools/webauthn_handler.py` uses a temporary, in-memory dictionary (`TEMP_USER_CREDENTIALS_STORE`) to store user credential data. This data is lost every time the application restarts, making the feature non-functional for persistent use.
 - **Required Fix:**
     1.  **Create a Database Model:** Define a new SQLAlchemy model `WebAuthnCredential` to store credential information (e.g., `user_id`, `credential_id`, `public_key`, `sign_count`).

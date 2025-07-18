@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from app.db.base_class import Base
+from app.models.user import User
 
 class RecoveryCode(Base):
     __tablename__ = "recovery_codes"
@@ -11,5 +12,3 @@ class RecoveryCode(Base):
     is_used = Column(Boolean, default=False, nullable=False)
 
     user = relationship("User", back_populates="recovery_codes")
-
-User.recovery_codes = relationship("RecoveryCode", order_by=RecoveryCode.id, back_populates="user")

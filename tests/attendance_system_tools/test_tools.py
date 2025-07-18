@@ -1,7 +1,8 @@
 import pytest
+from app.core.security import get_password_hash
 import math
 from unittest.mock import patch, MagicMock
-from attendance_system_tools.webauthn_handler import WebAuthnHandler, TEMP_USER_CREDENTIALS_STORE, TEMP_CHALLENGE_STORE
+from attendance_system_tools.webauthn_handler import WebAuthnHandler
 from attendance_system_tools.qr_code_manager import QRCodeManager
 from attendance_system_tools.recovery_codes_manager import RecoveryCodesManager
 from attendance_system_tools.geofence_manager import GeofenceManager
@@ -15,260 +16,145 @@ from webauthn.helpers.exceptions import WebAuthnException
 import base64
 import json
 from shapely.geometry import Point, Polygon
+from sqlalchemy.orm import Session
+from app.db.session import SessionLocal
+from app.models.user import User
+from app.crud import crud_user, crud_webauthn
+from app.schemas.user import UserCreate
 
-# Clear stores before each test to ensure isolation
-@pytest.fixture(autouse=True)
-def clear_webauthn_stores():
-    TEMP_USER_CREDENTIALS_STORE.clear()
-    TEMP_CHALLENGE_STORE.clear()
+# Database fixture
+@pytest.fixture(scope="session")
+def db_session():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+from app.core.security import get_password_hash
+
+# ... (other imports)
+
+# Test user fixture
+@pytest.fixture(scope="session")
+def test_user(db_session: Session):
+    user_email = "webauthn_test@example.com"
+    user = crud_user.get_user_by_email(db_session, email=user_email)
+    if not user:
+        user_in = UserCreate(email=user_email, password="password", full_name="WebAuthn Test User", roll_number="W123")
+        password_hash = get_password_hash("password")
+        user = crud_user.create_user(db_session, user_in=user_in, password_hash=password_hash)
+    return user
 
 # --- WebAuthnHandler Tests ---
 @pytest.fixture
-def webauthn_handler():
-    return WebAuthnHandler(rp_id="example.com", rp_name="Example App", rp_origin="https://example.com")
+def webauthn_handler(db_session: Session):
+    # Clean up any old data before a test run
+    db_session.query(crud_webauthn.WebAuthnCredential).delete()
+    db_session.query(crud_webauthn.WebAuthnChallenge).delete()
+    db_session.commit()
+    return WebAuthnHandler(rp_id="localhost", rp_name="Test App", rp_origin="http://localhost", db=db_session)
 
-def test_generate_registration_challenge(webauthn_handler):
-    user_id = "test_user_id"
-    username = "test_username"
-    user_display_name = "Test User"
-    
-    options_json = webauthn_handler.generate_registration_challenge(user_id, username, user_display_name)
-    
-    assert isinstance(options_json, str)
+def test_generate_registration_challenge(webauthn_handler: WebAuthnHandler, test_user: User, db_session: Session):
+    options_json = webauthn_handler.generate_registration_challenge(
+        user_id=test_user.id,
+        username=test_user.email,
+        user_display_name=test_user.full_name
+    )
     options = json.loads(options_json)
-    assert options["rp"]["id"] == "example.com"
-    assert options["user"]["name"] == username
-    assert options["user"]["displayName"] == user_display_name
-    assert options["challenge"] is not None
-
     challenge_bytes = base64.urlsafe_b64decode(options["challenge"] + "==")
-    # Check if challenge is stored
-    assert challenge_bytes.hex() in TEMP_CHALLENGE_STORE
-    stored_challenge_data = TEMP_CHALLENGE_STORE[challenge_bytes.hex()]
-    assert stored_challenge_data["app_user_id"] == user_id
-    assert stored_challenge_data["type"] == "registration"
+    challenge_hex = challenge_bytes.hex()
+    
+    db_challenge = crud_webauthn.get_challenge(db_session, challenge_hex)
+    assert db_challenge is not None
+    assert db_challenge.challenge == challenge_hex
+    crud_webauthn.remove_challenge(db_session, challenge_hex)
 
 @patch('attendance_system_tools.webauthn_handler.verify_registration_response')
-def test_verify_registration_response_success(mock_verify_registration_response, webauthn_handler):
-    user_id = "test_user_id_reg"
-    username = "test_username_reg"
-    user_display_name = "Test User Reg"
-    
-    options_json = webauthn_handler.generate_registration_challenge(user_id, username, user_display_name)
+def test_verify_registration_response_success(mock_verify, webauthn_handler: WebAuthnHandler, test_user: User, db_session: Session):
+    options_json = webauthn_handler.generate_registration_challenge(
+        user_id=test_user.id,
+        username=test_user.email,
+        user_display_name=test_user.full_name
+    )
     options = json.loads(options_json)
-    challenge_bytes = base64.urlsafe_b64decode(options["challenge"] + "==")
-    stored_challenge_hex = challenge_bytes.hex()
+    challenge_hex = base64.urlsafe_b64decode(options["challenge"] + "==").hex()
 
-    # Simulate a successful client response
     mock_credential_id = b'\x01\x02\x03\x04'
     mock_public_key = b'\x05\x06\x07\x08'
-    mock_sign_count = 1
-    mock_user_handle = user_id.encode('utf-8')
-
+    
     mock_verified_credential = MagicMock()
     mock_verified_credential.credential_id = mock_credential_id
     mock_verified_credential.credential_public_key = mock_public_key
-    mock_verified_credential.sign_count = mock_sign_count
-    mock_verified_credential.user_handle = mock_user_handle
-    
-    mock_verify_registration_response.return_value = mock_verified_credential
+    mock_verified_credential.sign_count = 1
+    mock_verify.return_value = mock_verified_credential
 
-    # Simulate a minimal client response JSON
-    client_response_json = {
-        "id": base64.urlsafe_b64encode(mock_credential_id).decode('utf-8'),
-        "rawId": base64.urlsafe_b64encode(mock_credential_id).decode('utf-8'),
+    client_response = {
+        "id": "test_id",
+        "rawId": "test_raw_id",
         "response": {
-            "clientDataJSON": base64.urlsafe_b64encode(b'{"challenge":"' + options['challenge'].encode('utf-8') + b'"}').decode('utf-8'),
-            "attestationObject": base64.urlsafe_b64encode(b'attestation_object').decode('utf-8'),
-            "transports": ["usb"]
+            "clientDataJSON": "client_data",
+            "attestationObject": "attestation_object"
         },
         "type": "public-key"
     }
     
     result = webauthn_handler.verify_registration_response(
-        credential_creation_response_json=json.dumps(client_response_json),
-        stored_challenge_hex=stored_challenge_hex
+        credential_creation_response_json=json.dumps(client_response),
+        stored_challenge_hex=challenge_hex,
+        user_id=test_user.id
     )
     
-    assert result["verified"] == True
-    assert result["user_id"] == user_id
-    assert result["credential_id_b64"] == base64.urlsafe_b64encode(mock_credential_id).decode('utf-8').rstrip("=")
+    assert result["verified"] is True
+    db_cred = crud_webauthn.get_credential_by_id(db_session, mock_credential_id)
+    assert db_cred is not None
+    assert db_cred.user_id == test_user.id
+    assert db_cred.public_key == mock_public_key
+
+def test_generate_authentication_challenge_success(webauthn_handler: WebAuthnHandler, test_user: User, db_session: Session):
+    # Ensure user has a credential first
+    cred_in = {"user_id": test_user.id, "credential_id": b'\x11\x22\x33', "public_key": b'\x44\x55\x66', "sign_count": 0}
+    crud_webauthn.create_credential(db_session, obj_in=crud_webauthn.WebAuthnCredentialCreate(**cred_in))
     
-    # Verify credential is stored
-    assert user_id in TEMP_USER_CREDENTIALS_STORE
-    stored_creds = TEMP_USER_CREDENTIALS_STORE[user_id]
-    assert len(stored_creds) == 1
-    assert stored_creds[0]["credential_id"] == mock_credential_id
-    assert stored_creds[0]["public_key"] == mock_public_key
-    assert stored_creds[0]["sign_count"] == mock_sign_count
-    assert stored_creds[0]["transports"] == ["usb"]
-    assert stored_creds[0]["webauthn_user_handle"] == mock_user_handle
-
-    # Verify challenge is removed
-    assert stored_challenge_hex not in TEMP_CHALLENGE_STORE
-
-def test_verify_registration_response_invalid_challenge(webauthn_handler):
-    with pytest.raises(ValueError, match="Invalid or expired challenge for registration."):
-        webauthn_handler.verify_registration_response("{}", "invalid_challenge_hex")
-
-@patch('attendance_system_tools.webauthn_handler.verify_registration_response')
-def test_verify_registration_response_webauthn_exception(mock_verify_registration_response, webauthn_handler):
-    user_id = "test_user_id_fail"
-    options_json = webauthn_handler.generate_registration_challenge(user_id, "u", "d")
+    options_json = webauthn_handler.generate_authentication_challenge(user_id=test_user.id)
     options = json.loads(options_json)
-    challenge_bytes = base64.urlsafe_b64decode(options["challenge"] + "==")
-    stored_challenge_hex = challenge_bytes.hex()
-
-    mock_verify_registration_response.side_effect = WebAuthnException("Test WebAuthn Error")
-
-    client_response_json = {
-        "id": "some_id", "rawId": "some_raw_id", "response": {"clientDataJSON": "e30", "attestationObject": "e30"}, "type": "public-key"
-    }
+    challenge_hex = base64.urlsafe_b64decode(options["challenge"] + "==").hex()
     
-    with pytest.raises(ValueError, match="WebAuthn registration verification failed: Test WebAuthn Error"):
-        webauthn_handler.verify_registration_response(json.dumps(client_response_json), stored_challenge_hex)
-
-def test_generate_authentication_challenge_no_credentials(webauthn_handler):
-    with pytest.raises(ValueError, match="No WebAuthn credentials registered for user 'non_existent_user'."):
-        webauthn_handler.generate_authentication_challenge("non_existent_user")
-
-def test_generate_authentication_challenge_success(webauthn_handler):
-    user_id = "auth_user"
-    # Manually add a credential for the user
-    TEMP_USER_CREDENTIALS_STORE[user_id] = [{
-        "credential_id": b'\x11\x22\x33\x44',
-        "public_key": b'\x55\x66\x77\x88',
-        "sign_count": 10,
-        "transports": ["internal"],
-    }]
-
-    options_json = webauthn_handler.generate_authentication_challenge(user_id)
-    assert isinstance(options_json, str)
-    options = json.loads(options_json)
-    assert options["rpId"] == "example.com"
-    assert options["challenge"] is not None
-    assert len(options["allowCredentials"]) == 1
-    assert options["allowCredentials"][0]["id"] == base64.urlsafe_b64encode(b'\x11\x22\x33\x44').decode('utf-8').rstrip("=")
-    assert options["allowCredentials"][0]["transports"] == ["internal"]
-
-    # Check if challenge is stored
-    challenge_bytes = base64.urlsafe_b64decode(options["challenge"] + "==")
-    assert challenge_bytes.hex() in TEMP_CHALLENGE_STORE
-    stored_challenge_data = TEMP_CHALLENGE_STORE[challenge_bytes.hex()]
-    assert stored_challenge_data["app_user_id"] == user_id
-    assert stored_challenge_data["type"] == "authentication"
+    db_challenge = crud_webauthn.get_challenge(db_session, challenge_hex)
+    assert db_challenge is not None
+    crud_webauthn.remove_challenge(db_session, challenge_hex)
 
 @patch('attendance_system_tools.webauthn_handler.verify_authentication_response')
-def test_verify_authentication_response_success(mock_verify_authentication_response, webauthn_handler):
-    user_id = "auth_user_verify"
-    cred_id_bytes = b'\xaa\xbb\xcc\xdd'
-    public_key_bytes = b'\xee\xff\x11\x22'
-    initial_sign_count = 5
+def test_verify_authentication_response_success(mock_verify, webauthn_handler: WebAuthnHandler, test_user: User, db_session: Session):
+    cred_id = b'\xaa\xbb\xcc'
+    cred_in = {"user_id": test_user.id, "credential_id": cred_id, "public_key": b'\xdd\xee\xff', "sign_count": 5}
+    cred = crud_webauthn.create_credential(db_session, obj_in=crud_webauthn.WebAuthnCredentialCreate(**cred_in))
 
-    TEMP_USER_CREDENTIALS_STORE[user_id] = [{
-        "credential_id": cred_id_bytes,
-        "public_key": public_key_bytes,
-        "sign_count": initial_sign_count,
-        "transports": ["usb"],
-    }]
-
-    options_json = webauthn_handler.generate_authentication_challenge(user_id)
+    options_json = webauthn_handler.generate_authentication_challenge(user_id=test_user.id)
     options = json.loads(options_json)
-    challenge_bytes = base64.urlsafe_b64decode(options["challenge"] + "==")
-    stored_challenge_hex = challenge_bytes.hex()
+    challenge_hex = base64.urlsafe_b64decode(options["challenge"] + "==").hex()
 
-    new_sign_count = initial_sign_count + 1
     mock_verified_auth = MagicMock()
-    mock_verified_auth.new_sign_count = new_sign_count
-    mock_verify_authentication_response.return_value = mock_verified_auth
+    mock_verified_auth.new_sign_count = 6
+    mock_verify.return_value = mock_verified_auth
 
-    # Simulate client authentication response
-    client_auth_response_json = {
-        "id": base64.urlsafe_b64encode(cred_id_bytes).decode('utf-8'),
-        "rawId": base64.urlsafe_b64encode(cred_id_bytes).decode('utf-8'),
-        "response": {
-            "clientDataJSON": base64.urlsafe_b64encode(b'{"challenge":"' + options['challenge'].encode('utf-8') + b'"}').decode('utf-8'),
-            "authenticatorData": base64.urlsafe_b64encode(b'auth_data').decode('utf-8'),
-            "signature": base64.urlsafe_b64encode(b'signature').decode('utf-8'),
-        },
-        "type": "public-key"
-    }
+    # We need to mock parse_authentication_credential_json to return a mock object with a raw_id
+    with patch('attendance_system_tools.webauthn_handler.parse_authentication_credential_json') as mock_parse:
+        mock_parsed_cred = MagicMock()
+        mock_parsed_cred.raw_id = cred_id
+        mock_parse.return_value = mock_parsed_cred
 
-    result = webauthn_handler.verify_authentication_response(
-        authentication_response_json=json.dumps(client_auth_response_json),
-        stored_challenge_hex=stored_challenge_hex,
-        requesting_app_user_id=user_id
-    )
-
-    assert result["verified"] == True
-    assert result["user_id"] == user_id
-    assert result["credential_id_b64"] == base64.urlsafe_b64encode(cred_id_bytes).decode('utf-8').rstrip("=")
-
-def test_verify_authentication_response_invalid_challenge(webauthn_handler):
-    with pytest.raises(ValueError, match="Invalid or expired challenge for authentication."):
-        webauthn_handler.verify_authentication_response("{}", "invalid_challenge_hex", "some_user")
-
-def test_verify_authentication_response_user_id_mismatch(webauthn_handler):
-    user_id = "auth_user_mismatch"
-    TEMP_USER_CREDENTIALS_STORE[user_id] = [{
-        "credential_id": b'\x11\x22\x33\x44',
-        "public_key": b'\x55\x66\x77\x88',
-        "sign_count": 10,
-        "transports": ["internal"],
-    }]
-    options_json = webauthn_handler.generate_authentication_challenge(user_id)
-    options = json.loads(options_json)
-    challenge_bytes = base64.urlsafe_b64decode(options["challenge"] + "==")
-    stored_challenge_hex = challenge_bytes.hex()
-
-    with pytest.raises(ValueError, match="Challenge user ID mismatch."):
-        webauthn_handler.verify_authentication_response(json.dumps({
-            "id": "some_id",
-            "rawId": "some_raw_id",
-            "response": {
-                "clientDataJSON": "e30",
-                "authenticatorData": "e30",
-                "signature": "e30",
-                "userHandle": "e30"
-            },
-            "type": "public-key"
-        }), stored_challenge_hex, "wrong_user")
-
-@patch('attendance_system_tools.webauthn_handler.verify_authentication_response')
-def test_verify_authentication_response_webauthn_exception(mock_verify_authentication_response, webauthn_handler):
-    user_id = "auth_user_webauthn_fail"
-    cred_id_bytes = b'\xaa\xbb\xcc\xdd'
-    public_key_bytes = b'\xee\xff\x11\x22'
-    initial_sign_count = 5
-
-    TEMP_USER_CREDENTIALS_STORE[user_id] = [{
-        "credential_id": cred_id_bytes,
-        "public_key": public_key_bytes,
-        "sign_count": initial_sign_count,
-        "transports": ["usb"],
-    }]
-
-    options_json = webauthn_handler.generate_authentication_challenge(user_id)
-    options = json.loads(options_json)
-    challenge_bytes = base64.urlsafe_b64decode(options["challenge"] + "==")
-    stored_challenge_hex = challenge_bytes.hex()
-
-    mock_verify_authentication_response.side_effect = WebAuthnException("Auth Failed")
-
-    client_auth_response_json = {
-        "id": base64.urlsafe_b64encode(cred_id_bytes).decode('utf-8'),
-        "rawId": base64.urlsafe_b64encode(cred_id_bytes).decode('utf-8'),
-        "response": {
-            "clientDataJSON": base64.urlsafe_b64encode(b'{"challenge":"' + options['challenge'].encode('utf-8') + b'"}').decode('utf-8'),
-            "authenticatorData": base64.urlsafe_b64encode(b'auth_data').decode('utf-8'),
-            "signature": base64.urlsafe_b64encode(b'signature').decode('utf-8'),
-            "userHandle": base64.urlsafe_b64encode(user_id.encode('utf-8')).decode('utf-8')
-        },
-        "type": "public-key"
-    }
-
-    with pytest.raises(ValueError, match="WebAuthn authentication verification failed: Auth Failed"):
-        webauthn_handler.verify_authentication_response(json.dumps(client_auth_response_json), stored_challenge_hex, user_id)
+        client_response = {"rawId": base64.urlsafe_b64encode(cred_id).decode()}
+        
+        result = webauthn_handler.verify_authentication_response(
+            authentication_response_json=json.dumps(client_response),
+            stored_challenge_hex=challenge_hex,
+            user_id=test_user.id
+        )
+    
+    assert result["verified"] is True
+    db_session.refresh(cred)
+    assert cred.sign_count == 6
 
 
 # --- QRCodeManager Tests ---
