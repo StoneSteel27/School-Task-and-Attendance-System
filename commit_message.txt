@@ -1,3 +1,0 @@
-chore: remove example webauthn code
-
-Removes the `examples-webauth` directory, which was added for reference during development and is no longer needed.
