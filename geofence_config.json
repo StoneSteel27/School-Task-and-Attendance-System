@@ -1,0 +1,14 @@
+[
+  {
+    "id": "main_campus_polygon",
+    "name": "Main School Campus (Polygon)",
+    "type": "polygon",
+    "coordinates": [
+      [-118.2460, 34.0540],
+      [-118.2420, 34.0540],
+      [-118.2420, 34.0500],
+      [-118.2460, 34.0500],
+      [-118.2460, 34.0540]
+    ]
+  }
+]

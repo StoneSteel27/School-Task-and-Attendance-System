@@ -77,7 +77,7 @@ def get_school_classes(
         results.append(school_class_pydantic_obj)
 
     return results
-def create_school_class(db: Session, *, class_in: SchoolClassCreate) -> SchoolClassSchema: # Modified return
+def create_school_class(db: Session, *, class_in: SchoolClassCreate) -> SchoolClass: # Modified return
     db_class_data = class_in.model_dump()
     db_class_orm = SchoolClass(**db_class_data)
     db.add(db_class_orm)
@@ -89,7 +89,7 @@ def create_school_class(db: Session, *, class_in: SchoolClassCreate) -> SchoolCl
     db.refresh(db_class_orm)
     # For a newly created class, students and teaching_staff will be empty.
     # SchoolClassSchema.from_orm will correctly initialize them to [] as per schema default.
-    return SchoolClassSchema.model_validate(db_class_orm)
+    return db_class_orm
 
 
 def update_school_class(

@@ -1,1 +1,12 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+passlib
+python-jose
+python-multipart
+bcrypt
+# Webauthn and related
+webauthn
+qrcode[pil]
 shapely

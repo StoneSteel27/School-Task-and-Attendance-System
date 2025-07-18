@@ -12,4 +12,4 @@ class TeacherAssignmentCreate(TeacherAssignmentBase):
 class TeacherAssignmentSubject(BaseModel): # Represents a subject a teacher teaches in a class
     subject: str
 
-    model_config = ConfigDict(from_attributes=True)  # Use model_config
+    model_config = ConfigDict(from_attributes=True)

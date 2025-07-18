@@ -58,12 +58,12 @@ def db() -> SQLAlchemySession:
     connection.close()
 
 
-@pytest.fixture(scope="module") # Client can be module-scoped if app state is consistent
-def client() -> TestClient:
-    # The dependency override for get_db will be set by the 'db' fixture
-    # when a test function requires it.
+@pytest.fixture(scope="function")
+def client(db: SQLAlchemySession) -> TestClient:
+    app.dependency_overrides[get_db] = lambda: db
     with TestClient(app) as c:
         yield c
+    app.dependency_overrides.clear()
 
 # --- User Fixtures ---
 @pytest.fixture(scope="function")

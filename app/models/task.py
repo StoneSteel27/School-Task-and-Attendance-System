@@ -37,3 +37,23 @@ class Task(Base):
 
     def __repr__(self):
         return f"<Task(id={self.id}, title='{self.title}', class_id={self.school_class_id}, subject='{self.subject}')>"
+
+
+class StudentTaskSubmission(Base):
+    __tablename__ = "student_task_submissions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    submission_url = Column(String, nullable=True) # URL or path to the submitted file/resource
+    status = Column(Enum(TaskStatus), default=TaskStatus.PENDING, nullable=False)
+
+    submitted_at = Column(DateTime, default=func.now(), nullable=False)
+    approved_at = Column(DateTime, nullable=True)
+
+    # Relationships
+    task = relationship("Task", backref="submissions")
+    student = relationship("User", backref="task_submissions")
+
+    def __repr__(self):
+        return f"<StudentTaskSubmission(id={self.id}, task_id={self.task_id}, student_id={self.student_id}, status='{self.status}')>"

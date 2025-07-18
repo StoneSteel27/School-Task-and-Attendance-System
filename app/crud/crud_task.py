@@ -3,10 +3,10 @@ from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 
-from app.models.task import Task, TaskStatus # Import the Task model and TaskStatus enum
+from app.models.task import Task, TaskStatus, StudentTaskSubmission # Import the Task model, TaskStatus enum, and StudentTaskSubmission
 from app.models.user import User # For relationships
 from app.models.school_class import SchoolClass # For relationships
-from app.schemas.task import TaskCreate, TaskUpdate # Import Pydantic schemas
+from app.schemas.task import TaskCreate, TaskUpdate, StudentTaskSubmissionCreate, StudentTaskSubmissionUpdate # Import Pydantic schemas
 
 
 def get_task(db: Session, task_id: int) -> Optional[Task]:
@@ -89,6 +89,55 @@ def update_task(db: Session, *, db_task: Task, task_in: TaskUpdate) -> Task:
         db.rollback()
         raise e
     return db_task
+
+
+def get_student_task_submission(db: Session, task_id: int, student_id: int) -> Optional[StudentTaskSubmission]:
+    """Retrieve a student's submission for a specific task."""
+    return db.query(StudentTaskSubmission).filter(
+        StudentTaskSubmission.task_id == task_id,
+        StudentTaskSubmission.student_id == student_id
+    ).first()
+
+
+def create_or_update_student_task_submission(
+    db: Session,
+    *,
+    task_id: int,
+    student_id: int,
+    submission_url: str,
+    status: TaskStatus = TaskStatus.SUBMITTED
+) -> StudentTaskSubmission:
+    """
+    Create a new student task submission or update an existing one.
+    If a submission for the given task_id and student_id already exists, it updates it.
+    Otherwise, it creates a new submission.
+    """
+    db_submission = get_student_task_submission(db, task_id, student_id)
+
+    if db_submission:
+        # Update existing submission
+        db_submission.submission_url = submission_url
+        db_submission.status = status
+    else:
+        # Create new submission
+        db_submission = StudentTaskSubmission(
+            task_id=task_id,
+            student_id=student_id,
+            submission_url=submission_url,
+            status=status
+        )
+        db.add(db_submission)
+    
+    try:
+        db.commit()
+        db.refresh(db_submission)
+    except IntegrityError as e:
+        db.rollback()
+        raise IntegrityError(f"Database integrity error while creating/updating student task submission: {e.orig}", e.params, e.orig) from e
+    except Exception as e:
+        db.rollback()
+        raise e
+    return db_submission
 
 
 def delete_task(db: Session, *, task_id: int) -> Optional[Task]:

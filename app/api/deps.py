@@ -86,6 +86,7 @@ async def get_student_for_view_permission(
         )
 
     if not (current_user.is_superuser or current_user.id == target_student.id):
+        print(f"current_user.id: {current_user.id}, target_student.id: {target_student.id}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this student's data."
@@ -122,3 +123,63 @@ async def get_teacher_for_view_permission(
             detail="Not authorized to access this teacher's data."
         )
     return target_teacher
+
+
+# --- Tool Managers ---
+
+from attendance_system_tools.webauthn_handler import WebAuthnHandler
+from attendance_system_tools.qr_code_manager import QRCodeManager
+from attendance_system_tools.recovery_codes_manager import RecoveryCodesManager
+from attendance_system_tools.geofence_manager import GeofenceManager
+
+# WebAuthn
+webauthn_handler = WebAuthnHandler(
+    rp_id="localhost",  # For local development
+    rp_name="School Attendance System",
+    rp_origin="http://localhost:3000"  # Assuming a React frontend running on 3000
+)
+
+# QR Code
+qr_code_manager = QRCodeManager()
+
+# Recovery Codes
+recovery_codes_manager = RecoveryCodesManager()
+
+# Geofence
+geofence_manager = GeofenceManager()
+
+# --- Geofence Configuration Loading ---
+import json
+from pathlib import Path
+
+def load_geofence_config():
+    # Assuming deps.py is in app/api/, the project root is 3 levels up.
+    config_path = Path(__file__).resolve().parent.parent.parent / "geofence_config.json"
+    try:
+        with open(config_path, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print(f"WARNING: Geofence configuration file not found at {config_path}. Geofencing will not work.")
+        return []
+    except json.JSONDecodeError:
+        print(f"ERROR: Could not decode {config_path}. Geofencing will not work.")
+        return []
+
+# Load the geofences once on startup
+SCHOOL_GEOFENCES = load_geofence_config()
+
+# --- In-Memory Stores for Auth Flows ---
+
+# Simple in-memory store for QR login sessions.
+# In a production environment, this should be replaced with a more robust
+# solution like Redis or a database table with TTL.
+# Structure:
+# {
+#   "qr_token_str": {
+#     "status": "pending" | "approved" | "expired",
+#     "user_id": int | None,
+#     "access_token": str | None,
+#     "created_at": datetime
+#   }
+# }
+QR_LOGIN_SESSIONS = {}
