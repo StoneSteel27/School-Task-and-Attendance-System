@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from .homeroom_attendance import router as homeroom_attendance_router
 from .tasks_announcements import router as tasks_announcements_router
 from .students import router as students_router
+from .submissions import router as submissions_router
 
 teacher_router = APIRouter()
 
@@ -22,6 +23,12 @@ teacher_router.include_router(
     students_router,
     prefix="/students",
     tags=["Teacher - Students"]
+)
+
+teacher_router.include_router(
+    submissions_router,
+    prefix="", # No additional prefix
+    tags=["Teacher - Submissions"]
 )
 
 # If you add more teacher-specific modules (e.g., teacher_tasks.py), include their routers here.

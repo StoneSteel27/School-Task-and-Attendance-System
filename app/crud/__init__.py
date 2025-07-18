@@ -5,3 +5,4 @@ from .crud_student_attendance import *
 from .crud_schedule import *
 from .crud_task import * # NEW
 from .crud_announcement import * # NEW
+from .crud_student_task_submission import *
