@@ -1,4 +1,3 @@
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -8,7 +7,8 @@ import uuid
 from app import crud, models, schemas
 from app.core.config import settings
 from app.core.security import get_password_hash
-from app.models.task import StudentTaskSubmission
+from app.models.academic.task import StudentTaskSubmission
+from tests.conftest import get_auth_headers
 
 # Fixture for a teacher user (can be reused from other test files if available)
 @pytest.fixture(scope="function")
@@ -68,12 +68,6 @@ def test_submission(db: Session, test_task: models.Task, test_student_user: mode
     submission = crud.crud_student_task_submission.create_submission(db=db, submission_in=submission_in)
     return submission
 
-# Helper to get auth headers
-def get_auth_headers(client: TestClient, email: str, password: str) -> dict[str, str]:
-    login_data = {"username": email, "password": password}
-    r = client.post(f"{settings.API_V1_STR}/auth/login/access-token", data=login_data)
-    tokens = r.json()
-    return {"Authorization": f"Bearer {tokens['access_token']}"}
 
 
 # --- Tests for GET /tasks/{task_id}/submissions ---
@@ -82,7 +76,7 @@ def test_teacher_list_submissions_success(
     client: TestClient, db: Session, test_teacher_user: models.User, test_task: models.Task, test_submission: StudentTaskSubmission
 ):
     headers = get_auth_headers(client, test_teacher_user.email, "testpassword")
-    response = client.get(f"{settings.API_V1_STR}/teacher/tasks/{test_task.id}/submissions", headers=headers)
+    response = client.get(f"{settings.API_V1_STR}/teachers/tasks/{test_task.id}/submissions", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
@@ -95,14 +89,14 @@ def test_teacher_list_submissions_unauthorized(
     # Create another teacher
     other_teacher = crud.crud_user.create_user(db, user_in=schemas.UserCreate(email="other@teacher.com", password="password", role="teacher", roll_number="T12345"), password_hash=get_password_hash("password"))
     headers = get_auth_headers(client, other_teacher.email, "password")
-    response = client.get(f"{settings.API_V1_STR}/teacher/tasks/{test_task.id}/submissions", headers=headers)
+    response = client.get(f"{settings.API_V1_STR}/teachers/tasks/{test_task.id}/submissions", headers=headers)
     assert response.status_code == 403
 
 def test_list_submissions_not_a_teacher(
-    client: TestClient, test_student_user: models.User, test_task: models.Task
+    client: TestClient, db: Session, test_student_user: models.User, test_task: models.Task, test_submission: StudentTaskSubmission
 ):
     headers = get_auth_headers(client, test_student_user.email, "studentpassword")
-    response = client.get(f"{settings.API_V1_STR}/teacher/tasks/{test_task.id}/submissions", headers=headers)
+    response = client.get(f"{settings.API_V1_STR}/teachers/tasks/{test_task.id}/submissions", headers=headers)
     assert response.status_code == 403
 
 
@@ -112,7 +106,7 @@ def test_teacher_approve_submission_success(
     client: TestClient, db: Session, test_teacher_user: models.User, test_submission: StudentTaskSubmission
 ):
     headers = get_auth_headers(client, test_teacher_user.email, "testpassword")
-    response = client.put(f"{settings.API_V1_STR}/teacher/submissions/{test_submission.id}/approve", headers=headers)
+    response = client.put(f"{settings.API_V1_STR}/teachers/submissions/{test_submission.id}/approve", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "APPROVED"
@@ -126,25 +120,22 @@ def test_teacher_approve_submission_unauthorized(
 ):
     other_teacher = crud.crud_user.create_user(db, user_in=schemas.UserCreate(email="other2@teacher.com", password="password", role="teacher", roll_number="T54321"), password_hash=get_password_hash("password"))
     headers = get_auth_headers(client, other_teacher.email, "password")
-    response = client.put(f"{settings.API_V1_STR}/teacher/submissions/{test_submission.id}/approve", headers=headers)
+    response = client.put(f"{settings.API_V1_STR}/teachers/submissions/{test_submission.id}/approve", headers=headers)
     assert response.status_code == 403
 
 def test_approve_submission_already_approved(
     client: TestClient, db: Session, test_teacher_user: models.User, test_submission: StudentTaskSubmission
 ):
-    # First, approve it
-    test_submission.status = models.TaskStatus.APPROVED
-    db.add(test_submission)
-    db.commit()
+    # First, approve the submission
+    crud.crud_student_task_submission.approve_submission(db, db_obj=test_submission)
 
     headers = get_auth_headers(client, test_teacher_user.email, "testpassword")
-    response = client.put(f"{settings.API_V1_STR}/teacher/submissions/{test_submission.id}/approve", headers=headers)
+    response = client.put(f"{settings.API_V1_STR}/teachers/submissions/{test_submission.id}/approve", headers=headers)
     assert response.status_code == 400
 
 def test_approve_submission_not_a_teacher(
-    client: TestClient, test_student_user: models.User, test_submission: StudentTaskSubmission
+    client: TestClient, db: Session, test_student_user: models.User, test_submission: StudentTaskSubmission
 ):
     headers = get_auth_headers(client, test_student_user.email, "studentpassword")
-    response = client.put(f"{settings.API_V1_STR}/teacher/submissions/{test_submission.id}/approve", headers=headers)
+    response = client.put(f"{settings.API_V1_STR}/teachers/submissions/{test_submission.id}/approve", headers=headers)
     assert response.status_code == 403
-

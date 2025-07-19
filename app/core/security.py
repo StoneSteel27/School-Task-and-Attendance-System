@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 from fastapi import HTTPException, status
 
 from app.core.config import settings
-from app.schemas.token import TokenData
+from app.schemas.auth.token import TokenData
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

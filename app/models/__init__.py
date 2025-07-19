@@ -1,6 +1,17 @@
-from .user import *
-from .school_class import *
-from .schedule import *
-from .student_attendance import StudentAttendance, AttendanceSession, AttendanceStatus
-from .task import Task, TaskStatus # NEW
-from .announcement import Announcement # NEW
+# Organized imports from subdirectories
+from .auth import *
+from .core import *
+from .attendance import *
+from .academic import *
+
+# Re-export all models for backward compatibility
+__all__ = [
+    # Auth models
+    "User", "RecoveryCode", "QRLoginSession", "WebAuthnCredential", "WebAuthnChallenge",
+    # Core models
+    "SchoolClass", "teacher_class_association", "ClassScheduleSlot", "Holiday",
+    # Attendance models
+    "StudentAttendance", "AttendanceSession", "AttendanceStatus", "TeacherAttendance",
+    # Academic models
+    "Task", "TaskStatus", "StudentTaskSubmission", "Announcement"
+]

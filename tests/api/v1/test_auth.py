@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session as SQLAlchemySession  # Renamed in conftest.py, using it here for type hinting
 
 from app.core.config import settings
-from app.models.user import User as UserModel
+from app.models.auth.user import User as UserModel
 
 
 # The client, db, test_superuser, and test_normal_user fixtures are automatically

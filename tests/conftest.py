@@ -9,11 +9,11 @@ from app.core.config import settings
 from app.db.base_class import Base
 from app.db.session import get_db, \
     SessionLocal as AppSessionLocal  # Import AppSessionLocal if TestingSessionLocal is based on it
-from app.models.user import User as UserModel
-from app.schemas.user import UserCreate
+from app.models.auth.user import User as UserModel
+from app.schemas.auth.user import UserCreate
 from app.core.security import get_password_hash
-from app.crud import crud_user
-from app.models.school_class import SchoolClass, teacher_class_association
+from app.crud.auth import crud_user
+from app.models.core.school_class import SchoolClass, teacher_class_association
 
 
 # --- Test Database Setup ---
@@ -101,7 +101,7 @@ def test_superuser(db: SQLAlchemySession) -> UserModel: # Use the overridden db 
 
 @pytest.fixture(scope="function")
 def test_teacher(db: SQLAlchemySession) -> UserModel:
-    email = "testteacher@example.com"
+    email = "testteacher1@example.com"  # Changed email to avoid conflict
     password = "testteacherpass"
     roll_number = "TEST_TEACHER_001"
     full_name = "Test Teacher User"
@@ -128,6 +128,37 @@ def test_teacher(db: SQLAlchemySession) -> UserModel:
         db.refresh(user)
     return user
 
+@pytest.fixture(scope="function")
+def test_teacher_user(db: SQLAlchemySession) -> UserModel:
+    """
+    Creates a teacher user for testing purposes.
+    """
+    email = "testteacher@example.com"
+    password = "testpassword"
+    user = crud_user.get_user_by_email(db, email=email)
+    if not user:
+        user_in = UserCreate(
+            email=email,
+            password=password,
+            role="teacher",
+            full_name="Test Teacher",
+            roll_number="T123"
+        )
+        user = crud_user.create_user(db, user_in=user_in, password_hash=get_password_hash(password))
+        # Explicitly commit and flush to ensure the user is in the database
+        db.commit()
+        db.flush()
+    else:
+        # Always update password and role for test reliability
+        user.hashed_password = get_password_hash(password)
+        user.role = "teacher"
+        user.is_active = True
+        user.is_superuser = False
+        db.add(user)
+        db.commit()
+        db.flush()
+        db.refresh(user)
+    return user
 
 @pytest.fixture(scope="function")
 def test_normal_user(db: SQLAlchemySession, test_teacher: UserModel) -> UserModel: # Use the overridden db fixture
@@ -169,6 +200,14 @@ def test_normal_user(db: SQLAlchemySession, test_teacher: UserModel) -> UserMode
     return user
 
 # --- Token Fixtures ---
+def get_auth_headers(client: TestClient, email: str, password: str) -> dict[str, str]:
+    login_data = {"username": email, "password": password}
+    r = client.post(f"{settings.API_V1_STR}/auth/login/access-token", data=login_data)
+    tokens = r.json()
+    if "access_token" not in tokens:
+        raise Exception(f"Login failed for {email}. Response: {tokens}")
+    return {"Authorization": f"Bearer {tokens['access_token']}"}
+
 @pytest.fixture(scope="function")
 def superuser_token_headers(client: TestClient, test_superuser: UserModel) -> dict[str, str]:
     # Note: test_superuser fixture ensures the user exists in the DB tied to the 'client's session override
@@ -193,3 +232,29 @@ def normal_user_token_headers(client: TestClient, test_normal_user: UserModel) -
     assert r.status_code == 200, f"Failed to log in normal user for token generation: {response_json}"
     token = response_json["access_token"]
     return {"Authorization": f"Bearer {token}"}
+
+@pytest.fixture(scope="function")
+def teacher_token_headers(client: TestClient, test_teacher_user: UserModel) -> dict[str, str]:
+    """
+    Returns authentication headers for a teacher user.
+    """
+    return get_auth_headers(client, test_teacher_user.email, "testpassword")
+
+@pytest.fixture(scope="function")
+def test_teacher_direct_fixture(db: SQLAlchemySession, test_teacher_user: UserModel) -> dict[str, str]:
+    """
+    Creates a teacher user for testing purposes and returns the auth headers directly.
+    This is a more direct approach that bypasses the need for separate login.
+    """
+    from app.core.security import create_access_token
+    from datetime import timedelta
+    from app.core.config import settings
+
+    # Create a token directly without going through the login endpoint
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": test_teacher_user.email}, expires_delta=access_token_expires
+    )
+
+    # Return the auth headers
+    return {"Authorization": f"Bearer {access_token}"}

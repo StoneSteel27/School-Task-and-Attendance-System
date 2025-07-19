@@ -7,9 +7,9 @@ from jose import JWTError
 from app.core.config import settings
 from app.core.security import decode_token
 from app.db.session import get_db
-from app.models.user import User as UserModel  # Keep existing alias
-from app.crud import crud_user  # Ensure crud_user is imported
-from app.schemas.token import TokenData
+from app.models.auth.user import User as UserModel  # Keep existing alias
+from app.crud.auth import user as crud_user  # Updated to use organized structure
+from app.schemas.auth.token import TokenData
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/auth/login/access-token"
@@ -183,5 +183,3 @@ def load_geofence_config():
 
 # Load the geofences once on startup
 SCHOOL_GEOFENCES = load_geofence_config()
-
-

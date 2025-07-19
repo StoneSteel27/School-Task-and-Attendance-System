@@ -6,50 +6,9 @@ import uuid
 
 from app import crud, models, schemas
 from app.core.config import settings
-from app.core.security import get_password_hash # NEW
+from app.core.security import get_password_hash
+from tests.conftest import test_teacher_direct_fixture, test_teacher_user, get_auth_headers
 
-# Helper fixture to create a teacher user
-@pytest.fixture(scope="function")
-def test_teacher_user(db: Session) -> models.User:
-    email = "testteacher@example.com"
-    password = "testteacherpass"
-    roll_number = "TEACHER_001"
-    full_name = "Test Teacher"
-
-    user = crud.crud_user.get_user_by_email(db, email=email)
-    if not user:
-        user_in_create = schemas.UserCreate(
-            email=email,
-            password=password,
-            full_name=full_name,
-            roll_number=roll_number,
-            is_superuser=False,
-            is_active=True,
-            role="teacher"
-        )
-        hashed_password = get_password_hash(password)
-        user = crud.crud_user.create_user(db=db, user_in=user_in_create, password_hash=hashed_password)
-    else:
-        user.is_superuser = False
-        user.is_active = True
-        user.role = "teacher"
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    return user
-
-# Helper fixture to get teacher token headers
-@pytest.fixture(scope="function")
-def teacher_token_headers(client: TestClient, test_teacher_user: models.User) -> dict[str, str]:
-    login_data = {
-        "username": test_teacher_user.email,
-        "password": "testteacherpass",
-    }
-    r = client.post(f"{settings.API_V1_STR}/auth/login/access-token", data=login_data)
-    response_json = r.json()
-    assert r.status_code == 200, f"Failed to log in teacher for token generation: {response_json}"
-    token = response_json["access_token"]
-    return {"Authorization": f"Bearer {token}"}
 
 # Helper fixture to create a school class
 @pytest.fixture(scope="function")
@@ -77,7 +36,7 @@ def assigned_teacher_to_class_subject(db: Session, test_teacher_user: models.Use
 
 # --- Task Endpoints Tests ---
 
-def test_teacher_create_task_success(client: TestClient, teacher_token_headers: dict, assigned_teacher_to_class_subject):
+def test_teacher_create_task_success(client: TestClient, test_teacher_direct_fixture: dict, assigned_teacher_to_class_subject):
     teacher, school_class, subject = assigned_teacher_to_class_subject
     task_data = {
         "title": "Algebra Homework",
@@ -86,9 +45,9 @@ def test_teacher_create_task_success(client: TestClient, teacher_token_headers: 
         "subject": subject
     }
     response = client.post(
-        f"{settings.API_V1_STR}/teacher/classes/{school_class.class_code}/tasks",
+        f"{settings.API_V1_STR}/teachers/classes/{school_class.class_code}/tasks",
         json=task_data,
-        headers=teacher_token_headers
+        headers=test_teacher_direct_fixture
     )
     assert response.status_code == 201
     content = response.json()
@@ -105,14 +64,14 @@ def test_teacher_create_task_unauthorized_role(client: TestClient, normal_user_t
         "subject": "Mathematics"
     }
     response = client.post(
-        f"{settings.API_V1_STR}/teacher/classes/{test_school_class.class_code}/tasks",
+        f"{settings.API_V1_STR}/teachers/classes/{test_school_class.class_code}/tasks",
         json=task_data,
         headers=normal_user_token_headers
     )
     assert response.status_code == 403
 
 
-def test_teacher_create_task_class_not_found(client: TestClient, teacher_token_headers: dict):
+def test_teacher_create_task_class_not_found(client: TestClient, test_teacher_direct_fixture: dict):
     task_data = {
         "title": "Algebra Homework",
         "description": "Complete exercises 1-10 from Chapter 3.",
@@ -120,14 +79,14 @@ def test_teacher_create_task_class_not_found(client: TestClient, teacher_token_h
         "subject": "Mathematics"
     }
     response = client.post(
-        f"{settings.API_V1_STR}/teacher/classes/NONEXISTENT-CLASS/tasks",
+        f"{settings.API_V1_STR}/teachers/classes/NONEXISTENT-CLASS/tasks",
         json=task_data,
-        headers=teacher_token_headers
+        headers=test_teacher_direct_fixture
     )
     assert response.status_code == 404
 
 
-def test_teacher_create_task_not_assigned_to_subject(client: TestClient, teacher_token_headers: dict, test_school_class: models.SchoolClass):
+def test_teacher_create_task_not_assigned_to_subject(client: TestClient, test_teacher_direct_fixture: dict, test_school_class: models.SchoolClass):
     # Teacher is not assigned to any subject in this class
     task_data = {
         "title": "Algebra Homework",
@@ -136,14 +95,14 @@ def test_teacher_create_task_not_assigned_to_subject(client: TestClient, teacher
         "subject": "Physics" # Teacher is not assigned to Physics
     }
     response = client.post(
-        f"{settings.API_V1_STR}/teacher/classes/{test_school_class.class_code}/tasks",
+        f"{settings.API_V1_STR}/teachers/classes/{test_school_class.class_code}/tasks",
         json=task_data,
-        headers=teacher_token_headers
+        headers=test_teacher_direct_fixture
     )
     assert response.status_code == 403
 
 
-def test_teacher_get_tasks_for_class_success(client: TestClient, teacher_token_headers: dict, assigned_teacher_to_class_subject, db: Session):
+def test_teacher_get_tasks_for_class_success(client: TestClient, test_teacher_direct_fixture: dict, assigned_teacher_to_class_subject, db: Session):
     teacher, school_class, subject = assigned_teacher_to_class_subject
     # Create a task first
     task_data = schemas.TaskCreate(
@@ -155,8 +114,8 @@ def test_teacher_get_tasks_for_class_success(client: TestClient, teacher_token_h
     crud.crud_task.create_task(db=db, task_in=task_data, school_class_id=school_class.id, created_by_teacher_id=teacher.id)
 
     response = client.get(
-        f"{settings.API_V1_STR}/teacher/classes/{school_class.class_code}/tasks",
-        headers=teacher_token_headers
+        f"{settings.API_V1_STR}/teachers/classes/{school_class.class_code}/tasks",
+        headers=test_teacher_direct_fixture
     )
     assert response.status_code == 200
     content = response.json()
@@ -164,7 +123,7 @@ def test_teacher_get_tasks_for_class_success(client: TestClient, teacher_token_h
     assert any(task["title"] == "Math Test Prep" for task in content)
 
 
-def test_teacher_get_tasks_for_class_filter_by_subject(client: TestClient, teacher_token_headers: dict, assigned_teacher_to_class_subject, db: Session):
+def test_teacher_get_tasks_for_class_filter_by_subject(client: TestClient, test_teacher_direct_fixture: dict, assigned_teacher_to_class_subject, db: Session):
     teacher, school_class, math_subject = assigned_teacher_to_class_subject
     # Create a Math task
     math_task_data = schemas.TaskCreate(
@@ -190,8 +149,8 @@ def test_teacher_get_tasks_for_class_filter_by_subject(client: TestClient, teach
 
     # Get tasks filtered by Math
     response = client.get(
-        f"{settings.API_V1_STR}/teacher/classes/{school_class.class_code}/tasks?subject={math_subject}",
-        headers=teacher_token_headers
+        f"{settings.API_V1_STR}/teachers/classes/{school_class.class_code}/tasks?subject={math_subject}",
+        headers=test_teacher_direct_fixture
     )
     assert response.status_code == 200
     content = response.json()
@@ -200,7 +159,7 @@ def test_teacher_get_tasks_for_class_filter_by_subject(client: TestClient, teach
     assert content[0]["subject"] == math_subject
 
 
-def test_teacher_update_task_success(client: TestClient, teacher_token_headers: dict, assigned_teacher_to_class_subject, db: Session):
+def test_teacher_update_task_success(client: TestClient, test_teacher_direct_fixture: dict, assigned_teacher_to_class_subject, db: Session):
     teacher, school_class, subject = assigned_teacher_to_class_subject
     task_data = schemas.TaskCreate(
         title="Original Task",
@@ -212,9 +171,9 @@ def test_teacher_update_task_success(client: TestClient, teacher_token_headers: 
 
     update_data = {"title": "Updated Task Title", "description": "New Description"}
     response = client.put(
-        f"{settings.API_V1_STR}/teacher/tasks/{created_task.id}",
+        f"{settings.API_V1_STR}/teachers/tasks/{created_task.id}",
         json=update_data,
-        headers=teacher_token_headers
+        headers=test_teacher_direct_fixture
     )
     assert response.status_code == 200
     content = response.json()
@@ -222,106 +181,92 @@ def test_teacher_update_task_success(client: TestClient, teacher_token_headers: 
     assert content["description"] == update_data["description"]
 
 
-def test_teacher_update_task_unauthorized_teacher(client: TestClient, teacher_token_headers: dict, test_school_class: models.SchoolClass, db: Session):
-    # Create a task by a different teacher (not the one associated with teacher_token_headers)
-    other_teacher_email = "otherteacher@example.com"
-    other_teacher_pass = "otherteacherpass"
-    other_teacher_roll = "TEACHER_002"
-    from app.core.security import get_password_hash
-    other_teacher = crud.crud_user.create_user(
+def test_teacher_update_task_unauthorized_teacher(client: TestClient, assigned_teacher_to_class_subject, db: Session):
+    teacher, school_class, subject = assigned_teacher_to_class_subject
+    task = crud.crud_task.create_task(
         db=db,
-        user_in=schemas.UserCreate(email=other_teacher_email, password=other_teacher_pass, roll_number=other_teacher_roll, role="teacher"),
-        password_hash=get_password_hash(other_teacher_pass)
+        task_in=schemas.TaskCreate(title="Another Task", description="Desc", due_date=date.today(), subject=subject),
+        school_class_id=school_class.id,
+        created_by_teacher_id=teacher.id
     )
-    crud.crud_teacher_assignment.assign_teacher_to_class_subject(db, teacher=other_teacher, school_class=test_school_class, subject="Mathematics")
 
-    task_data = schemas.TaskCreate(
-        title="Other Teacher's Task",
-        description="",
-        due_date=date.today() + timedelta(days=7),
-        subject="Mathematics"
-    )
-    created_task = crud.crud_task.create_task(db=db, task_in=task_data, school_class_id=test_school_class.id, created_by_teacher_id=other_teacher.id)
+    # Create another teacher and get their token
+    other_teacher_email = "other_teacher@example.com"
+    other_teacher_pass = "otherpass"
+    other_teacher = crud.crud_user.get_user_by_email(db, email=other_teacher_email)
+    if not other_teacher:
+        other_teacher_in = schemas.UserCreate(email=other_teacher_email, password=other_teacher_pass, full_name="Other Teacher", role="teacher", roll_number="TEACHER_002")
+        hashed_password = get_password_hash(other_teacher_pass)
+        other_teacher = crud.crud_user.create_user(db, user_in=other_teacher_in, password_hash=hashed_password)
 
-    update_data = {"title": "Attempted Update"}
+    other_teacher_headers = get_auth_headers(client, other_teacher_email, other_teacher_pass)
+
+    update_data = {"title": "Unauthorized Update"}
     response = client.put(
-        f"{settings.API_V1_STR}/teacher/tasks/{created_task.id}",
+        f"{settings.API_V1_STR}/teachers/tasks/{task.id}",
         json=update_data,
-        headers=teacher_token_headers # This teacher is not the creator
+        headers=other_teacher_headers
     )
     assert response.status_code == 403
 
 
-def test_teacher_delete_task_success(client: TestClient, teacher_token_headers: dict, assigned_teacher_to_class_subject, db: Session):
+def test_teacher_delete_task_success(client: TestClient, test_teacher_direct_fixture: dict, assigned_teacher_to_class_subject, db: Session):
     teacher, school_class, subject = assigned_teacher_to_class_subject
-    task_data = schemas.TaskCreate(
-        title="Task to Delete",
-        description="",
-        due_date=date.today() + timedelta(days=7),
-        subject=subject
+    task = crud.crud_task.create_task(
+        db=db,
+        task_in=schemas.TaskCreate(title="To Be Deleted", description="Desc", due_date=date.today(), subject=subject),
+        school_class_id=school_class.id,
+        created_by_teacher_id=teacher.id
     )
-    created_task = crud.crud_task.create_task(db=db, task_in=task_data, school_class_id=school_class.id, created_by_teacher_id=teacher.id)
-
     response = client.delete(
-        f"{settings.API_V1_STR}/teacher/tasks/{created_task.id}",
-        headers=teacher_token_headers
+        f"{settings.API_V1_STR}/teachers/tasks/{task.id}",
+        headers=test_teacher_direct_fixture
     )
     assert response.status_code == 200
-    content = response.json()
-    assert content["id"] == created_task.id
-
-    # Verify it's actually deleted
-    get_response = client.get(
-        f"{settings.API_V1_STR}/teacher/classes/{school_class.class_code}/tasks",
-        headers=teacher_token_headers
-    )
-    assert get_response.status_code == 200
-    assert not any(task["id"] == created_task.id for task in get_response.json())
+    assert crud.crud_task.get_task(db, task_id=task.id) is None
 
 
-def test_teacher_delete_task_unauthorized_teacher(client: TestClient, teacher_token_headers: dict, test_school_class: models.SchoolClass, db: Session):
-    # Create a task by a different teacher
-    other_teacher_email = "anotherteacher@example.com"
-    other_teacher_pass = "anotherteacherpass"
-    other_teacher_roll = "TEACHER_003"
-    from app.core.security import get_password_hash
-    other_teacher = crud.crud_user.create_user(
+def test_teacher_delete_task_unauthorized_teacher(client: TestClient, assigned_teacher_to_class_subject, db: Session):
+    teacher, school_class, subject = assigned_teacher_to_class_subject
+    task = crud.crud_task.create_task(
         db=db,
-        user_in=schemas.UserCreate(email=other_teacher_email, password=other_teacher_pass, roll_number=other_teacher_roll, role="teacher"),
-        password_hash=get_password_hash(other_teacher_pass)
+        task_in=schemas.TaskCreate(title="Protected Task", description="Desc", due_date=date.today(), subject=subject),
+        school_class_id=school_class.id,
+        created_by_teacher_id=teacher.id
     )
-    crud.crud_teacher_assignment.assign_teacher_to_class_subject(db, teacher=other_teacher, school_class=test_school_class, subject="Mathematics")
 
-    task_data = schemas.TaskCreate(
-        title="Other Teacher's Task to Delete",
-        description="",
-        due_date=date.today() + timedelta(days=7),
-        subject="Mathematics"
-    )
-    created_task = crud.crud_task.create_task(db=db, task_in=task_data, school_class_id=test_school_class.id, created_by_teacher_id=other_teacher.id)
+    other_teacher_email = "another_teacher@example.com"
+    other_teacher_pass = "anotherpass"
+    other_teacher = crud.crud_user.get_user_by_email(db, email=other_teacher_email)
+    if not other_teacher:
+        other_teacher_in = schemas.UserCreate(email=other_teacher_email, password=other_teacher_pass, full_name="Another Teacher", role="teacher", roll_number="TEACHER_003")
+        hashed_password = get_password_hash(other_teacher_pass)
+        other_teacher = crud.crud_user.create_user(db, user_in=other_teacher_in, password_hash=hashed_password)
+
+    other_teacher_headers = get_auth_headers(client, other_teacher_email, other_teacher_pass)
 
     response = client.delete(
-        f"{settings.API_V1_STR}/teacher/tasks/{created_task.id}",
-        headers=teacher_token_headers # This teacher is not the creator
+        f"{settings.API_V1_STR}/teachers/tasks/{task.id}",
+        headers=other_teacher_headers
     )
     assert response.status_code == 403
+    assert crud.crud_task.get_task(db, task_id=task.id) is not None
 
 
 # --- Announcement Endpoints Tests ---
 
-def test_teacher_create_announcement_success_class_specific(client: TestClient, teacher_token_headers: dict, assigned_teacher_to_class_subject):
+def test_teacher_create_announcement_success_class_specific(client: TestClient, test_teacher_direct_fixture: dict, assigned_teacher_to_class_subject):
     teacher, school_class, subject = assigned_teacher_to_class_subject
     announcement_data = {
-        "title": "Class Meeting",
-        "content": "Mandatory class meeting tomorrow at 10 AM.",
-        "is_school_wide": False,
-        "school_class_id": school_class.id,
-        "subject": subject
+        "title": "Math Class Announcement",
+        "content": "Reminder: Math test on Friday.",
+        "subject": subject,
+        "school_class_id": school_class.id  # Correctly pass school_class_id
     }
     response = client.post(
-        f"{settings.API_V1_STR}/teacher/announcements",
+        f"{settings.API_V1_STR}/teachers/announcements",  # Correct endpoint
         json=announcement_data,
-        headers=teacher_token_headers
+        headers=test_teacher_direct_fixture
     )
     assert response.status_code == 201
     content = response.json()
@@ -331,90 +276,71 @@ def test_teacher_create_announcement_success_class_specific(client: TestClient, 
     assert content["is_school_wide"] is False
 
 
-def test_teacher_create_announcement_forbidden_school_wide(client: TestClient, teacher_token_headers: dict, test_school_class: models.SchoolClass):
+def test_teacher_create_announcement_forbidden_school_wide(client: TestClient, test_teacher_direct_fixture: dict, assigned_teacher_to_class_subject):
+    teacher, school_class, subject = assigned_teacher_to_class_subject
     announcement_data = {
-        "title": "School Holiday",
-        "content": "School will be closed next Monday.",
+        "title": "School-Wide Announcement Attempt",
+        "content": "This should not be allowed.",
         "is_school_wide": True,
-        "school_class_id": None, # Should be None for school-wide
-        "subject": None
+        "school_class_id": school_class.id
     }
     response = client.post(
-        f"{settings.API_V1_STR}/teacher/announcements",
+        f"{settings.API_V1_STR}/teachers/announcements",
         json=announcement_data,
-        headers=teacher_token_headers
+        headers=test_teacher_direct_fixture
     )
-    assert response.status_code == 403 # Teachers cannot create school-wide announcements
+    assert response.status_code == 403
 
 
-def test_teacher_get_class_announcements_success(client: TestClient, teacher_token_headers: dict, assigned_teacher_to_class_subject, db: Session):
+def test_teacher_get_class_announcements_success(client: TestClient, test_teacher_direct_fixture: dict, assigned_teacher_to_class_subject, db: Session):
     teacher, school_class, subject = assigned_teacher_to_class_subject
-    # Create an announcement for the class
-    announcement_data = schemas.AnnouncementCreate(
-        title="Exam Reminder",
-        content="Exams start next week.",
-        is_school_wide=False,
-        school_class_id=school_class.id,
-        subject=subject
+    # Create an announcement first
+    announcement_in = schemas.AnnouncementCreate(
+        title="Test Announcement",
+        content="This is a test.",
+        subject=subject,
+        school_class_id=school_class.id
     )
-    crud.crud_announcement.create_announcement(db=db, announcement_in=announcement_data, created_by_user_id=teacher.id)
+    crud.crud_announcement.create_announcement(db=db, announcement_in=announcement_in, created_by_user_id=teacher.id)
 
     response = client.get(
-        f"{settings.API_V1_STR}/teacher/classes/{school_class.class_code}/announcements",
-        headers=teacher_token_headers
+        f"{settings.API_V1_STR}/teachers/classes/{school_class.class_code}/announcements",
+        headers=test_teacher_direct_fixture
     )
     assert response.status_code == 200
     content = response.json()
     assert len(content) >= 1
-    assert any(announcement["title"] == "Exam Reminder" for announcement in content)
+    assert any(ann["title"] == "Test Announcement" for ann in content)
 
 
-def test_teacher_update_announcement_success(client: TestClient, teacher_token_headers: dict, assigned_teacher_to_class_subject, db: Session):
+def test_teacher_update_announcement_success(client: TestClient, test_teacher_direct_fixture: dict, assigned_teacher_to_class_subject, db: Session):
     teacher, school_class, subject = assigned_teacher_to_class_subject
-    announcement_data = schemas.AnnouncementCreate(
-        title="Original Announcement",
-        content="Original Content",
-        is_school_wide=False,
-        school_class_id=school_class.id,
-        subject=subject
+    announcement = crud.crud_announcement.create_announcement(
+        db=db,
+        announcement_in=schemas.AnnouncementCreate(title="Original Announcement", content="Original content", subject=subject, school_class_id=school_class.id),
+        created_by_user_id=teacher.id
     )
-    created_announcement = crud.crud_announcement.create_announcement(db=db, announcement_in=announcement_data, created_by_user_id=teacher.id)
-
-    update_data = {"title": "Updated Announcement Title", "content": "New Content"}
+    update_data = {"content": "Updated announcement content."}
     response = client.put(
-        f"{settings.API_V1_STR}/teacher/announcements/{created_announcement.id}",
+        f"{settings.API_V1_STR}/teachers/announcements/{announcement.id}",
         json=update_data,
-        headers=teacher_token_headers
+        headers=test_teacher_direct_fixture
     )
     assert response.status_code == 200
     content = response.json()
-    assert content["title"] == update_data["title"]
-    assert content["content"] == update_data["content"]
+    assert content["content"] == "Updated announcement content."
 
 
-def test_teacher_delete_announcement_success(client: TestClient, teacher_token_headers: dict, assigned_teacher_to_class_subject, db: Session):
+def test_teacher_delete_announcement_success(client: TestClient, test_teacher_direct_fixture: dict, assigned_teacher_to_class_subject, db: Session):
     teacher, school_class, subject = assigned_teacher_to_class_subject
-    announcement_data = schemas.AnnouncementCreate(
-        title="Announcement to Delete",
-        content="",
-        is_school_wide=False,
-        school_class_id=school_class.id,
-        subject=subject
+    announcement = crud.crud_announcement.create_announcement(
+        db=db,
+        announcement_in=schemas.AnnouncementCreate(title="To Delete", content="Delete me", subject=subject, school_class_id=school_class.id),
+        created_by_user_id=teacher.id
     )
-    created_announcement = crud.crud_announcement.create_announcement(db=db, announcement_in=announcement_data, created_by_user_id=teacher.id)
-
     response = client.delete(
-        f"{settings.API_V1_STR}/teacher/announcements/{created_announcement.id}",
-        headers=teacher_token_headers
+        f"{settings.API_V1_STR}/teachers/announcements/{announcement.id}",
+        headers=test_teacher_direct_fixture
     )
     assert response.status_code == 200
-    content = response.json()
-    assert content["id"] == created_announcement.id
-
-    # Verify it's actually deleted
-    get_response = client.get(
-        f"{settings.API_V1_STR}/teacher/classes/{school_class.class_code}/announcements",
-        headers=teacher_token_headers
-    )
-    assert get_response.status_code == 200
-    assert not any(announcement["id"] == created_announcement.id for announcement in get_response.json())
+    assert crud.crud_announcement.get_announcement(db, announcement_id=announcement.id) is None

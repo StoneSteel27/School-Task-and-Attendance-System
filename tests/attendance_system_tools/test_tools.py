@@ -18,9 +18,9 @@ import json
 from shapely.geometry import Point, Polygon
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
-from app.models.user import User
-from app.crud import crud_user, crud_webauthn
-from app.schemas.user import UserCreate
+from app.models.auth.user import User
+from app.crud.auth import crud_user, webauthn
+from app.schemas.auth.user import UserCreate
 
 # Database fixture
 @pytest.fixture(scope="session")
@@ -50,8 +50,8 @@ def test_user(db_session: Session):
 @pytest.fixture
 def webauthn_handler(db_session: Session):
     # Clean up any old data before a test run
-    db_session.query(crud_webauthn.WebAuthnCredential).delete()
-    db_session.query(crud_webauthn.WebAuthnChallenge).delete()
+    db_session.query(webauthn.WebAuthnCredential).delete()
+    db_session.query(webauthn.WebAuthnChallenge).delete()
     db_session.commit()
     return WebAuthnHandler(rp_id="localhost", rp_name="Test App", rp_origin="http://localhost", db=db_session)
 
@@ -65,10 +65,10 @@ def test_generate_registration_challenge(webauthn_handler: WebAuthnHandler, test
     challenge_bytes = base64.urlsafe_b64decode(options["challenge"] + "==")
     challenge_hex = challenge_bytes.hex()
     
-    db_challenge = crud_webauthn.get_challenge(db_session, challenge_hex)
+    db_challenge = webauthn.get_challenge(db_session, challenge_hex)
     assert db_challenge is not None
     assert db_challenge.challenge == challenge_hex
-    crud_webauthn.remove_challenge(db_session, challenge_hex)
+    webauthn.remove_challenge(db_session, challenge_hex)
 
 @patch('attendance_system_tools.webauthn_handler.verify_registration_response')
 def test_verify_registration_response_success(mock_verify, webauthn_handler: WebAuthnHandler, test_user: User, db_session: Session):
@@ -106,7 +106,7 @@ def test_verify_registration_response_success(mock_verify, webauthn_handler: Web
     )
     
     assert result["verified"] is True
-    db_cred = crud_webauthn.get_credential_by_id(db_session, mock_credential_id)
+    db_cred = webauthn.get_credential_by_id(db_session, mock_credential_id)
     assert db_cred is not None
     assert db_cred.user_id == test_user.id
     assert db_cred.public_key == mock_public_key
@@ -114,21 +114,21 @@ def test_verify_registration_response_success(mock_verify, webauthn_handler: Web
 def test_generate_authentication_challenge_success(webauthn_handler: WebAuthnHandler, test_user: User, db_session: Session):
     # Ensure user has a credential first
     cred_in = {"user_id": test_user.id, "credential_id": b'\x11\x22\x33', "public_key": b'\x44\x55\x66', "sign_count": 0}
-    crud_webauthn.create_credential(db_session, obj_in=crud_webauthn.WebAuthnCredentialCreate(**cred_in))
+    webauthn.create_credential(db_session, obj_in=webauthn.WebAuthnCredentialCreate(**cred_in))
     
     options_json = webauthn_handler.generate_authentication_challenge(user_id=test_user.id)
     options = json.loads(options_json)
     challenge_hex = base64.urlsafe_b64decode(options["challenge"] + "==").hex()
     
-    db_challenge = crud_webauthn.get_challenge(db_session, challenge_hex)
+    db_challenge = webauthn.get_challenge(db_session, challenge_hex)
     assert db_challenge is not None
-    crud_webauthn.remove_challenge(db_session, challenge_hex)
+    webauthn.remove_challenge(db_session, challenge_hex)
 
 @patch('attendance_system_tools.webauthn_handler.verify_authentication_response')
 def test_verify_authentication_response_success(mock_verify, webauthn_handler: WebAuthnHandler, test_user: User, db_session: Session):
     cred_id = b'\xaa\xbb\xcc'
     cred_in = {"user_id": test_user.id, "credential_id": cred_id, "public_key": b'\xdd\xee\xff', "sign_count": 5}
-    cred = crud_webauthn.create_credential(db_session, obj_in=crud_webauthn.WebAuthnCredentialCreate(**cred_in))
+    cred = webauthn.create_credential(db_session, obj_in=webauthn.WebAuthnCredentialCreate(**cred_in))
 
     options_json = webauthn_handler.generate_authentication_challenge(user_id=test_user.id)
     options = json.loads(options_json)

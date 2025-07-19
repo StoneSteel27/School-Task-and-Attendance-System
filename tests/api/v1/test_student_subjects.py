@@ -1,8 +1,8 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from app.core.config import settings
-from app.models.user import User as UserModel
-from app.schemas.subject import Subject as SubjectSchema
+from app.models.auth.user import User as UserModel
+from app.schemas.core.subject import Subject as SubjectSchema
 
 
 def test_list_student_subjects_normal_user(
@@ -47,7 +47,7 @@ def test_list_student_subjects_no_class(
     db: Session,
 ):
     # Create a student without a class
-    from app.schemas.user import UserCreate
+    from app.schemas.auth.user import UserCreate
     from app.core.security import get_password_hash
     from app.crud import crud_user
     email = "noclassuser@example.com"
