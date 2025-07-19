@@ -25,8 +25,8 @@ from webauthn.helpers.structs import (
 )
 from webauthn.helpers.exceptions import WebAuthnException
 
-from app.crud import crud_webauthn
-from app.schemas.webauthn import WebAuthnCredentialCreate, WebAuthnCredentialUpdate
+from app.crud.auth import webauthn as crud_webauthn
+from app.schemas.auth.webauthn import WebAuthnCredentialCreate, WebAuthnCredentialUpdate
 
 
 def base64url_encode(data: bytes) -> str:

@@ -1,9 +1,9 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from app.core.config import settings
-from app.models.user import User as UserModel
-from app.models.task import Task, TaskStatus
-from app.schemas.task import TaskWithSubmissionStatus
+from app.models.auth.user import User as UserModel
+from app.models.academic.task import Task, TaskStatus
+from app.schemas.academic.task import TaskWithSubmissionStatus
 from datetime import date
 
 

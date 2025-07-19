@@ -7,11 +7,11 @@ from sqlalchemy.orm import Session as SQLAlchemySession # Using the alias from c
 
 from app.core.config import settings
 # Import schemas needed for payload and response validation if desired, though direct dicts are often used for payloads
-# from app.schemas.user import UserCreate, UserUpdate
-# from app.schemas.school_class import SchoolClassCreate, SchoolClassUpdate
-# from app.schemas.student_attendance import ClassAttendanceSubmission, StudentAttendanceEntryInput
-from app.models.student_attendance import AttendanceSession, AttendanceStatus # For enum values
-from app.models.user import User as UserModel # For type hinting if needed
+# from app.schemas.auth.user import UserCreate, UserUpdate
+# from app.schemas.core.school_class import SchoolClassCreate, SchoolClassUpdate
+# from app.schemas.attendance.student_attendance import ClassAttendanceSubmission, StudentAttendanceEntryInput
+from app.models.attendance.student_attendance import AttendanceSession, AttendanceStatus # For enum values
+from app.models.auth.user import User as UserModel # For type hinting if needed
 
 # Helper functions for random data (can be moved to a common test utility later)
 def random_email() -> str:
@@ -149,7 +149,7 @@ def test_full_attendance_workflow(
         ]
     }
     response = client.post(
-        f"{settings.API_V1_STR}/teacher/homeroom-attendance/{class_code}/submit",
+        f"{settings.API_V1_STR}/teachers/homeroom-attendance/{class_code}/submit",
         headers=teacher_auth_headers,
         json=submit_attendance_payload
     )
@@ -165,7 +165,7 @@ def test_full_attendance_workflow(
 
     # --- 3. Teacher Verification: Get Attendance Records ---
     response = client.get(
-        f"{settings.API_V1_STR}/teacher/homeroom-attendance/{class_code}/{attendance_date}/{attendance_session}",
+        f"{settings.API_V1_STR}/teachers/homeroom-attendance/{class_code}/{attendance_date}/{attendance_session}",
         headers=teacher_auth_headers
     )
     assert response.status_code == 200, f"Teacher get attendance failed: {response.json()}"
@@ -189,7 +189,7 @@ def test_full_attendance_workflow(
 
     # --- 4. Admin Verification: Get Attendance Records ---
     response = client.get(
-        f"{settings.API_V1_STR}/admin/student-attendance/class/{class_code}/{attendance_date}/{attendance_session}",
+        f"{settings.API_V1_STR}/admin/attendance/class/{class_code}/{attendance_date}/{attendance_session}",
         headers=admin_headers
     )
     assert response.status_code == 200, f"Admin get attendance failed: {response.json()}"
@@ -213,7 +213,7 @@ def test_full_attendance_workflow(
 
     # --- 5. Admin Verification: Get Attendance Summary ---
     response = client.get(
-        f"{settings.API_V1_STR}/admin/student-attendance/class/{class_code}/{attendance_date}/{attendance_session}/summary",
+        f"{settings.API_V1_STR}/admin/attendance/class/{class_code}/{attendance_date}/{attendance_session}/summary",
         headers=admin_headers
     )
     assert response.status_code == 200, f"Admin get attendance summary failed: {response.json()}"

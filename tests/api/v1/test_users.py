@@ -2,8 +2,8 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from app.core.config import settings
-from app.models.user import User as UserModel  # To compare response against the user model
-from app.schemas.user import User as UserSchema  # The response schema
+from app.models.auth.user import User as UserModel  # To compare response against the user model
+from app.schemas.auth.user import User as UserSchema  # The response schema
 
 
 # Fixtures normal_user_token_headers, superuser_token_headers,

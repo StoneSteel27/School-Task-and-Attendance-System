@@ -63,13 +63,13 @@ def setup_students_and_classes(db: Session, test_teacher_user_for_search: models
 
 
 def test_search_students_no_params_fails(client: TestClient, teacher_token_headers_for_search: dict):
-    response = client.get(f"{settings.API_V1_STR}/teacher/students/search", headers=teacher_token_headers_for_search)
+    response = client.get(f"{settings.API_V1_STR}/teachers/search", headers=teacher_token_headers_for_search)
     assert response.status_code == 400
     assert "at least one search parameter" in response.json()["detail"].lower()
 
 def test_search_students_by_name_success(client: TestClient, teacher_token_headers_for_search: dict, setup_students_and_classes):
     # Search for "Alice" - should only find student1
-    response = client.get(f"{settings.API_V1_STR}/teacher/students/search?name=Alice", headers=teacher_token_headers_for_search)
+    response = client.get(f"{settings.API_V1_STR}/teachers/search?name=Alice", headers=teacher_token_headers_for_search)
     assert response.status_code == 200
     results = response.json()
     assert len(results) == 1
@@ -78,7 +78,7 @@ def test_search_students_by_name_success(client: TestClient, teacher_token_heade
 
 def test_search_students_by_partial_name(client: TestClient, teacher_token_headers_for_search: dict, setup_students_and_classes):
     # Search for "son" - should only find Bob Johnson (student2) because Charlie is not in the teacher's class
-    response = client.get(f"{settings.API_V1_STR}/teacher/students/search?name=son", headers=teacher_token_headers_for_search)
+    response = client.get(f"{settings.API_V1_STR}/teachers/search?name=son", headers=teacher_token_headers_for_search)
     assert response.status_code == 200
     results = response.json()
     assert len(results) == 1
@@ -87,7 +87,7 @@ def test_search_students_by_partial_name(client: TestClient, teacher_token_heade
 
 def test_search_students_by_roll_number_success(client: TestClient, teacher_token_headers_for_search: dict, setup_students_and_classes):
     # Search for roll number "S2"
-    response = client.get(f"{settings.API_V1_STR}/teacher/students/search?roll_number=S2", headers=teacher_token_headers_for_search)
+    response = client.get(f"{settings.API_V1_STR}/teachers/search?roll_number=S2", headers=teacher_token_headers_for_search)
     assert response.status_code == 200
     results = response.json()
     assert len(results) == 1
@@ -95,14 +95,14 @@ def test_search_students_by_roll_number_success(client: TestClient, teacher_toke
 
 def test_search_students_by_roll_number_not_in_class(client: TestClient, teacher_token_headers_for_search: dict, setup_students_and_classes):
     # Search for roll number "S3" - student exists but is not in the teacher's class
-    response = client.get(f"{settings.API_V1_STR}/teacher/students/search?roll_number=S3", headers=teacher_token_headers_for_search)
+    response = client.get(f"{settings.API_V1_STR}/teachers/search?roll_number=S3", headers=teacher_token_headers_for_search)
     assert response.status_code == 200
     results = response.json()
     assert len(results) == 0 # Should not be found
 
 def test_search_students_by_class_code_success(client: TestClient, teacher_token_headers_for_search: dict, setup_students_and_classes):
     class_a_code = setup_students_and_classes["class_a"].class_code
-    response = client.get(f"{settings.API_V1_STR}/teacher/students/search?class_code={class_a_code}", headers=teacher_token_headers_for_search)
+    response = client.get(f"{settings.API_V1_STR}/teachers/search?class_code={class_a_code}", headers=teacher_token_headers_for_search)
     assert response.status_code == 200
     results = response.json()
     assert len(results) == 2
@@ -113,7 +113,7 @@ def test_search_students_by_class_code_success(client: TestClient, teacher_token
 def test_search_students_by_class_code_not_assigned(client: TestClient, teacher_token_headers_for_search: dict, setup_students_and_classes):
     class_b_code = setup_students_and_classes["class_b"].class_code
     # Teacher is not assigned to Class B
-    response = client.get(f"{settings.API_V1_STR}/teacher/students/search?class_code={class_b_code}", headers=teacher_token_headers_for_search)
+    response = client.get(f"{settings.API_V1_STR}/teachers/search?class_code={class_b_code}", headers=teacher_token_headers_for_search)
     assert response.status_code == 200
     results = response.json()
     assert len(results) == 0 # Should not return students from a class they don't teach
@@ -121,7 +121,7 @@ def test_search_students_by_class_code_not_assigned(client: TestClient, teacher_
 def test_search_students_by_name_and_class_code(client: TestClient, teacher_token_headers_for_search: dict, setup_students_and_classes):
     class_a_code = setup_students_and_classes["class_a"].class_code
     # Search for name "Bob" in Class A
-    response = client.get(f"{settings.API_V1_STR}/teacher/students/search?name=Bob&class_code={class_a_code}", headers=teacher_token_headers_for_search)
+    response = client.get(f"{settings.API_V1_STR}/teachers/search?name=Bob&class_code={class_a_code}", headers=teacher_token_headers_for_search)
     assert response.status_code == 200
     results = response.json()
     assert len(results) == 1

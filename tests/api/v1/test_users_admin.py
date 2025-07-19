@@ -4,10 +4,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session as SQLAlchemySession
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
-from app.models.user import User as UserModel
-from app.schemas.user import User as UserSchema
-from app.crud import crud_user
-from app.schemas.user import UserCreate, UserUpdate
+from app.models.auth.user import User as UserModel
+from app.schemas.auth.user import User as UserSchema
+from app.crud.auth import crud_user
+from app.schemas.auth.user import UserCreate, UserUpdate
 
 
 def random_email() -> str:
@@ -28,7 +28,7 @@ def test_create_student_user_success_as_superuser(
         client: TestClient, superuser_token_headers: dict[str, str], db: SQLAlchemySession
 ):
     """
-    Test successful creation of a new 'student' user by a superuser.
+    Test successful creation of a new 'student' user by a supercrud_user.
     """
     email = random_email()
     roll_number = random_roll_number("STUDENT")
@@ -78,7 +78,7 @@ def test_create_teacher_user_success_as_superuser(
         client: TestClient, superuser_token_headers: dict[str, str], db: SQLAlchemySession
 ):
     """
-    Test successful creation of a new 'teacher' user by a superuser.
+    Test successful creation of a new 'teacher' user by a supercrud_user.
     """
     email = random_email()
     roll_number = random_roll_number("TEACH")
@@ -119,7 +119,7 @@ def test_create_admin_user_success_as_superuser(
         client: TestClient, superuser_token_headers: dict[str, str], db: SQLAlchemySession
 ):
     """
-    Test successful creation of a new 'admin' user (also superuser) by a superuser.
+    Test successful creation of a new 'admin' user (also superuser) by a supercrud_user.
     """
     email = random_email()
     roll_number = random_roll_number("ADMIN")
@@ -240,7 +240,7 @@ def test_create_user_duplicate_roll_number_as_superuser(
     )
     assert response.status_code == 400
     assert response.json()[
-               "detail"] == f"The user with roll number '{test_normal_user.roll_number}' already exists in the system."
+               "detail"] == "The user with this roll number already exists in the system."
 
 
 def test_create_user_missing_required_fields_as_superuser(
@@ -295,7 +295,7 @@ def test_list_users_success_as_superuser(
         test_normal_user: UserModel
 ):
     """
-    Test successful retrieval of the users list by a superuser.
+    Test successful retrieval of the users list by a supercrud_user.
     Ensures at least the fixtures users are present.
     """
     response = client.get(
@@ -330,7 +330,7 @@ def test_list_users_pagination_as_superuser(
         client: TestClient, superuser_token_headers: dict[str, str], db: SQLAlchemySession
 ):
     """
-    Test pagination for listing users by a superuser.
+    Test pagination for listing users by a supercrud_user.
     Creates a few users to test skip and limit.
     """
 
@@ -429,7 +429,7 @@ def test_get_user_by_roll_number_success_as_superuser(
         test_normal_user: UserModel
 ):
     """
-    Test successful retrieval of a specific user by roll number by a superuser.
+    Test successful retrieval of a specific user by roll number by a supercrud_user.
     """
     target_roll_number = test_normal_user.roll_number
     response = client.get(
@@ -452,7 +452,7 @@ def test_get_user_by_roll_number_non_existent_as_superuser(
         client: TestClient, superuser_token_headers: dict[str, str]
 ):
     """
-    Test attempt to retrieve a user by a non-existent roll number by a superuser.
+    Test attempt to retrieve a user by a non-existent roll number by a supercrud_user.
     """
     non_existent_roll_number = random_roll_number("NONEXIST")
     response = client.get(
@@ -526,7 +526,7 @@ def test_update_user_details_success_as_superuser(
         client: TestClient, superuser_token_headers: dict[str, str], db: SQLAlchemySession
 ):
     """
-    Test successful update of various user details by a superuser.
+    Test successful update of various user details by a supercrud_user.
     """
     user_to_update = create_modifiable_test_user(db, role="student", suffix="DETAIL")
     original_roll_number = user_to_update.roll_number
@@ -578,7 +578,7 @@ def test_update_user_password_success_as_superuser(
         client: TestClient, superuser_token_headers: dict[str, str], db: SQLAlchemySession
 ):
     """
-    Test successful update of a user's password by a superuser.
+    Test successful update of a user's password by a supercrud_user.
     """
     user_to_update = create_modifiable_test_user(db, suffix="PASS")
     user_roll_number = user_to_update.roll_number
@@ -606,7 +606,7 @@ def test_update_user_non_existent_as_superuser(
         client: TestClient, superuser_token_headers: dict[str, str]
 ):
     """
-    Test attempt to update a user that does not exist by a superuser.
+    Test attempt to update a user that does not exist by a supercrud_user.
     """
     non_existent_roll_number = random_roll_number("NONEX")
     update_payload = UserUpdate(full_name="Ghost User").model_dump(exclude_unset=True)
@@ -625,7 +625,7 @@ def test_update_user_to_duplicate_email_as_superuser(
         test_normal_user: UserModel  # An existing user whose email we'll try to use
 ):
     """
-    Test attempt to update a user's email to an email that is already in use by another user.
+    Test attempt to update a user's email to an email that is already in use by another crud_user.
     """
     user_to_update = create_modifiable_test_user(db, suffix="DUPEMAIL")
     user_roll_number = user_to_update.roll_number
@@ -640,7 +640,7 @@ def test_update_user_to_duplicate_email_as_superuser(
     )
     assert response.status_code == 400
 
-    assert "email or roll number may already be in use" in response.json()["detail"].lower()
+    assert "the user with this email already exists in the system" in response.json()["detail"].lower()
 
 
 def test_update_user_to_duplicate_roll_number_as_superuser(
@@ -648,7 +648,7 @@ def test_update_user_to_duplicate_roll_number_as_superuser(
         test_normal_user: UserModel  # An existing user whose roll_number we'll try to use
 ):
     """
-    Test attempt to update a user's roll_number to one that is already in use by another user.
+    Test attempt to update a user's roll_number to one that is already in use by another crud_user.
     """
     user_to_update = create_modifiable_test_user(db, suffix="DUPRN")
     original_roll_number = user_to_update.roll_number
@@ -661,7 +661,7 @@ def test_update_user_to_duplicate_roll_number_as_superuser(
         json=update_payload,
     )
     assert response.status_code == 400
-    assert "email or roll number may already be in use" in response.json()["detail"].lower()
+    assert "the user with this roll number already exists in the system" in response.json()["detail"].lower()
 
 
 def test_update_user_as_normal_user_forbidden(
@@ -725,7 +725,7 @@ def test_delete_user_success_as_superuser(
         client: TestClient, superuser_token_headers: dict[str, str], db: SQLAlchemySession
 ):
     """
-    Test successful deletion of a user by a superuser.
+    Test successful deletion of a user by a supercrud_user.
     """
     user_to_delete = create_modifiable_test_user(db, role="student", suffix="DELSUCCESS")
     user_roll_number_to_delete = user_to_delete.roll_number
@@ -753,7 +753,7 @@ def test_delete_user_non_existent_as_superuser(
         client: TestClient, superuser_token_headers: dict[str, str]
 ):
     """
-    Test attempt to delete a user that does not exist by a superuser.
+    Test attempt to delete a user that does not exist by a supercrud_user.
     """
     non_existent_roll_number = random_roll_number("NONEXDEL")
 
@@ -778,7 +778,7 @@ def test_delete_self_as_superuser_forbidden(
         headers=superuser_token_headers,
     )
     assert response.status_code == 400
-    assert response.json()["detail"] == "Superuser cannot delete themselves."
+    assert response.json()["detail"] == "Superusers cannot delete their own account."
 
 
 def test_delete_user_as_normal_user_forbidden(

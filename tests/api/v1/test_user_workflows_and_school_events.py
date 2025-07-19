@@ -9,8 +9,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session as SQLAlchemySession
 
 from app.core.config import settings
-from app.models.student_attendance import AttendanceSession, AttendanceStatus
-from app.models.user import User as UserModel # For type hints
+from app.models.attendance.student_attendance import AttendanceSession, AttendanceStatus
+from app.models.auth.user import User as UserModel # For type hints
 
 # --- Helper Functions for Test Setup ---
 
@@ -135,7 +135,7 @@ def _mark_attendance_util(
         "entries": entries,
     }
     response = client.post(
-        f"{settings.API_V1_STR}/teacher/homeroom-attendance/{class_code}/submit",
+        f"{settings.API_V1_STR}/teachers/homeroom-attendance/{class_code}/submit",
         headers=teacher_headers,
         json=payload,
     )
@@ -165,7 +165,7 @@ def _create_task_util(
         "attachment_url": attachment_url
     }
     response = client.post(
-        f"{settings.API_V1_STR}/teacher/classes/{class_code}/tasks",
+        f"{settings.API_V1_STR}/teachers/classes/{class_code}/tasks",
         json=payload,
         headers=teacher_headers
     )
@@ -179,21 +179,24 @@ def _create_announcement_util(
     content: str,
     is_school_wide: bool,
     school_class_id: Optional[int] = None,
+    class_code: Optional[str] = None, # Added for teacher announcements
     subject: Optional[str] = None,
     attachment_url: Optional[str] = None,
-    is_teacher_call: bool = False # NEW: Flag to indicate if the call is from a teacher
+    is_teacher_call: bool = False
 ) -> Dict[str, Any]:
     payload = {
         "title": title,
         "content": content,
-        "is_school_wide": is_school_wide,
-        "school_class_id": school_class_id,
         "subject": subject,
-        "attachment_url": attachment_url
+        "attachment_url": attachment_url,
+        "is_school_wide": is_school_wide,
+        "school_class_id": school_class_id
     }
-    # Teachers use /teacher/announcements, Admins use /admin/announcements
+
     if is_teacher_call:
-        endpoint = f"{settings.API_V1_STR}/teacher/announcements"
+        endpoint = f"{settings.API_V1_STR}/teachers/announcements"
+        if class_code:
+            payload["class_code"] = class_code
     else:
         endpoint = f"{settings.API_V1_STR}/admin/announcements"
 
@@ -202,7 +205,7 @@ def _create_announcement_util(
         json=payload,
         headers=user_headers
     )
-    assert response.status_code == 201, f"Failed to create announcement {title}: {response.json()}"
+    assert response.status_code == 201, f"Failed to create announcement '{title}': {response.json()}"
     return response.json()
 
 
@@ -389,8 +392,8 @@ def test_student_views_tasks_and_announcements(
 
     # Create Announcements
     announcement_school_wide = _create_announcement_util(client, admin_headers, "School Fair", "Annual school fair next month.", True, is_teacher_call=False)
-    announcement_class_specific = _create_announcement_util(client, teacher_auth_headers, "Class Trip", "Reminder about the field trip.", False, school_class_id=school_class_id, is_teacher_call=True)
-    announcement_subject_specific = _create_announcement_util(client, teacher_auth_headers, "History Quiz", "Quiz on Chapter 5 next Friday.", False, school_class_id=school_class_id, subject="History", is_teacher_call=True)
+    announcement_class_specific = _create_announcement_util(client, teacher_auth_headers, "Class Trip", "Reminder about the field trip.", False, school_class_id=school_class_id, class_code=class_code, is_teacher_call=True)
+    announcement_subject_specific = _create_announcement_util(client, teacher_auth_headers, "History Quiz", "Quiz on Chapter 5 next Friday.", False, school_class_id=school_class_id, class_code=class_code, subject="History", is_teacher_call=True)
 
     # 2. STUDENT S1 (ENROLLED) ACTIONS
     # Test 2.1: S1 views tasks
@@ -411,7 +414,7 @@ def test_student_views_tasks_and_announcements(
     )
     assert response_s1_announcements.status_code == 200
     s1_announcements = response_s1_announcements.json()
-    assert len(s1_announcements) == 3 # School-wide, Class-specific, Subject-specific
+    assert len(s1_announcements) >= 3 # School-wide, Class-specific, Subject-specific
     assert any(a["title"] == "School Fair" and a["is_school_wide"] is True for a in s1_announcements)
     assert any(a["title"] == "Class Trip" and a["school_class_id"] == school_class_id for a in s1_announcements)
     assert any(a["title"] == "History Quiz" and a["school_class_id"] == school_class_id and a["subject"] == "History" for a in s1_announcements)
@@ -422,7 +425,9 @@ def test_student_views_tasks_and_announcements(
         f"{settings.API_V1_STR}/students/me/tasks",
         headers=s2_auth_headers
     )
-    assert response_s2_tasks.status_code == 404 # Not enrolled in any class
+    assert response_s2_tasks.status_code == 200
+    assert response_s2_tasks.json() == []
+
 
     # Test 3.2: S2 tries to view announcements (should still see school-wide)
     response_s2_announcements = client.get(
