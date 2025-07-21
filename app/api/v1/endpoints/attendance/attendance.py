@@ -9,7 +9,7 @@ from app.schemas.attendance import TeacherAttendanceBase, TeacherAttendanceCreat
 
 router = APIRouter()
 
-@router.post("/attendance/check-in", response_model=schemas.TeacherAttendanceInDB)
+@router.post("/check-in", response_model=schemas.TeacherAttendanceInDB)
 def check_in(
     *,
     db: Session = Depends(get_db),
@@ -44,7 +44,7 @@ def check_in(
     attendance_record = crud.teacher_attendance.create_check_in(db, teacher=current_user)
     return attendance_record
 
-@router.post("/attendance/check-out", response_model=schemas.TeacherAttendanceInDB)
+@router.post("/check-out", response_model=schemas.TeacherAttendanceInDB)
 def check_out(
     *,
     db: Session = Depends(get_db),

@@ -1,3 +1,4 @@
+
 # Attendance API Endpoints
 
 ## Teacher Attendance
@@ -5,7 +6,7 @@
 ### Check-in
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/attendance/attendance/check-in`
+*   **URL Path:** `/attendance/check-in`
 *   **Brief Description:** Check in the current teacher, verifying their location and creating an attendance record.
 *   **Expected Payload/Body:**
     ```json
@@ -27,7 +28,7 @@
 ### Check-out
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/attendance/attendance/check-out`
+*   **URL Path:** `/attendance/check-out`
 *   **Brief Description:** Check out the current teacher, verifying their location and updating the attendance record.
 *   **Expected Payload/Body:**
     ```json
