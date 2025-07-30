@@ -7,9 +7,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal, engine
-from app.models.user import User
-from app.schemas.user import UserCreate
-from app.crud import crud_user
+from app.models.auth.user import User
+from app.schemas.auth.user import UserCreate
+from app.crud.auth import user as crud_user
 from app.core.config import settings
 from app.core.security import get_password_hash
 
