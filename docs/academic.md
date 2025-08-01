@@ -5,7 +5,7 @@
 ### Create Announcement
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/admin/announcements/`
+*   **URL Path:** `/api/v1/admin/announcements/`
 *   **Brief Description:** Admin: Create a new announcement (school-wide, class-specific, or subject-specific)
 *   **Expected Payload/Body:**
     ```json
@@ -35,7 +35,7 @@
 ### Get All Announcements
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/admin/announcements/`
+*   **URL Path:** `/api/v1/admin/announcements/`
 *   **Brief Description:** Admin: Get all announcements (school-wide, class-specific, subject-specific)
 *   **Query Parameters:**
     *   `is_school_wide` (boolean, optional)
@@ -61,7 +61,7 @@
 ### Update Announcement
 
 *   **HTTP Method:** `PUT`
-*   **URL Path:** `/admin/announcements/{announcement_id}`
+*   **URL Path:** `/api/v1/admin/announcements/{announcement_id}`
 *   **Brief Description:** Admin: Update an existing announcement
 *   **Expected Payload/Body:**
     ```json
@@ -91,7 +91,7 @@
 ### Delete Announcement
 
 *   **HTTP Method:** `DELETE`
-*   **URL Path:** `/admin/announcements/{announcement_id}`
+*   **URL Path:** `/api/v1/admin/announcements/{announcement_id}`
 *   **Brief Description:** Admin: Delete an announcement
 *   **Expected Response:**
     ```json
@@ -113,7 +113,7 @@
 ### List Task Submissions
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/teachers/tasks/{task_id}/submissions`
+*   **URL Path:** `/api/v1/teachers/tasks/{task_id}/submissions`
 *   **Brief Description:** Teacher: List submissions for a task
 *   **Expected Response:**
     ```json
@@ -133,7 +133,7 @@
 ### Approve Submission
 
 *   **HTTP Method:** `PUT`
-*   **URL Path:** `/teachers/submissions/{submission_id}/approve`
+*   **URL Path:** `/api/v1/teachers/submissions/{submission_id}/approve`
 *   **Brief Description:** Teacher: Approve a submission
 *   **Expected Response:**
     ```json
@@ -153,7 +153,7 @@
 ### Create Task for Class
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/teachers/classes/{class_code}/tasks`
+*   **URL Path:** `/api/v1/teachers/classes/{class_code}/tasks`
 *   **Brief Description:** Teacher: Create a new task for a specific class and subject
 *   **Expected Payload/Body:**
     ```json
@@ -182,7 +182,7 @@
 ### Get Tasks for Class
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/teachers/classes/{class_code}/tasks`
+*   **URL Path:** `/api/v1/teachers/classes/{class_code}/tasks`
 *   **Brief Description:** Teacher: Get all tasks for a specific class and optionally filter by subject
 *   **Query Parameters:**
     *   `subject` (string, optional)
@@ -206,7 +206,7 @@
 ### Update Task
 
 *   **HTTP Method:** `PUT`
-*   **URL Path:** `/teachers/tasks/{task_id}`
+*   **URL Path:** `/api/v1/teachers/tasks/{task_id}`
 *   **Brief Description:** Teacher: Update an existing task
 *   **Expected Payload/Body:**
     ```json
@@ -235,7 +235,7 @@
 ### Delete Task
 
 *   **HTTP Method:** `DELETE`
-*   **URL Path:** `/teachers/tasks/{task_id}`
+*   **URL Path:** `/api/v1/teachers/tasks/{task_id}`
 *   **Brief Description:** Teacher: Delete a task
 *   **Expected Response:**
     ```json
@@ -255,7 +255,7 @@
 ### Create Announcement
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/teachers/announcements`
+*   **URL Path:** `/api/v1/teachers/announcements`
 *   **Brief Description:** Teacher: Create a new announcement (class-specific or subject-specific)
 *   **Expected Payload/Body:**
     ```json
@@ -285,7 +285,7 @@
 ### Get Class Announcements
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/teachers/classes/{class_code}/announcements`
+*   **URL Path:** `/api/v1/teachers/classes/{class_code}/announcements`
 *   **Brief Description:** Teacher: Get class-specific announcements, optionally filtered by subject
 *   **Query Parameters:**
     *   `subject` (string, optional)
@@ -309,7 +309,7 @@
 ### Update Announcement
 
 *   **HTTP Method:** `PUT`
-*   **URL Path:** `/teachers/announcements/{announcement_id}`
+*   **URL Path:** `/api/v1/teachers/announcements/{announcement_id}`
 *   **Brief Description:** Teacher: Update an existing announcement
 *   **Expected Payload/Body:**
     ```json
@@ -339,7 +339,7 @@
 ### Delete Announcement
 
 *   **HTTP Method:** `DELETE`
-*   **URL Path:** `/teachers/announcements/{announcement_id}`
+*   **URL Path:** `/api/v1/teachers/announcements/{announcement_id}`
 *   **Brief Description:** Teacher: Delete an announcement
 *   **Expected Response:**
     ```json
@@ -359,7 +359,7 @@
 ### Get My Subjects
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/teachers/my-subjects`
+*   **URL Path:** `/api/v1/teachers/my-subjects`
 *   **Brief Description:** Teacher: Get all subjects taught by the current teacher
 *   **Expected Response:**
     ```json

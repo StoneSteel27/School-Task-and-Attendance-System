@@ -1,6 +1,9 @@
 from fastapi import FastAPI, status
 from app.core.config import settings
 from app.api.v1.api import api_router_v1
+from app.core.logging_config import setup_logging
+
+setup_logging()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

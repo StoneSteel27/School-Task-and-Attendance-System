@@ -5,7 +5,7 @@
 ### Create School Class
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/classes/`
+*   **URL Path:** `/api/v1/classes/`
 *   **Brief Description:** Create a new school class.
 *   **Expected Payload/Body:**
     ```json
@@ -32,7 +32,7 @@
 ### Read School Class
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/classes/{class_code}`
+*   **URL Path:** `/api/v1/classes/{class_code}`
 *   **Brief Description:** Get a specific school class by its class_code.
 *   **Expected Response:**
     ```json
@@ -50,7 +50,7 @@
 ### Read School Classes
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/classes/`
+*   **URL Path:** `/api/v1/classes/`
 *   **Brief Description:** Retrieve all school classes.
 *   **Query Parameters:**
     *   `skip` (integer, optional)
@@ -73,7 +73,7 @@
 ### Update School Class
 
 *   **HTTP Method:** `PUT`
-*   **URL Path:** `/classes/{class_code}`
+*   **URL Path:** `/api/v1/classes/{class_code}`
 *   **Brief Description:** Update the details of an existing school class.
 *   **Expected Payload/Body:**
     ```json
@@ -100,7 +100,7 @@
 ### Delete School Class
 
 *   **HTTP Method:** `DELETE`
-*   **URL Path:** `/classes/{class_code}`
+*   **URL Path:** `/api/v1/classes/{class_code}`
 *   **Brief Description:** Delete a school class by its class_code.
 *   **Expected Response:**
     ```json
@@ -118,7 +118,7 @@
 ### Get Class Teaching Staff
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/classes/{class_code}/teaching-staff`
+*   **URL Path:** `/api/v1/classes/{class_code}/teaching-staff`
 *   **Brief Description:** Get the list of teachers and the subjects they teach for a specific class.
 *   **Expected Response:**
     ```json
@@ -134,7 +134,7 @@
 ### Get Class Schedule
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/classes/{class_code}/schedule`
+*   **URL Path:** `/api/v1/classes/{class_code}/schedule`
 *   **Brief Description:** Get the schedule for a specific school class.
 *   **Query Parameters:**
     *   `target_date` (date, optional)
@@ -156,7 +156,7 @@
 ### Replace Class Schedule
 
 *   **HTTP Method:** `PUT`
-*   **URL Path:** `/classes/{class_code}/schedule`
+*   **URL Path:** `/api/v1/classes/{class_code}/schedule`
 *   **Brief Description:** Replace the entire schedule for a class on a specific date.
 *   **Expected Payload/Body:**
     ```json
@@ -188,7 +188,7 @@
 ### Assign Multiple Students to a Class
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/classes/{class_code}/students`
+*   **URL Path:** `/api/v1/classes/{class_code}/students`
 *   **Brief Description:** Assign multiple students to a class by their roll numbers.
 *   **Expected Payload/Body:**
     ```json
@@ -210,7 +210,7 @@
 ### Unassign Multiple Students from a Class
 
 *   **HTTP Method:** `DELETE`
-*   **URL Path:** `/classes/{class_code}/students`
+*   **URL Path:** `/api/v1/classes/{class_code}/students`
 *   **Brief Description:** Unassign multiple students from a class by their roll numbers.
 *   **Expected Payload/Body:**
     ```json
@@ -232,7 +232,7 @@
 ### Assign Multiple Teachers to Subjects in a Class
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/classes/{class_code}/teachers`
+*   **URL Path:** `/api/v1/classes/{class_code}/teachers`
 *   **Brief Description:** Assign multiple teachers to subjects in a class.
 *   **Expected Payload/Body:**
     ```json
@@ -258,7 +258,7 @@
 ### Unassign Multiple Teachers from Subjects in a Class
 
 *   **HTTP Method:** `DELETE`
-*   **URL Path:** `/classes/{class_code}/teachers`
+*   **URL Path:** `/api/v1/classes/{class_code}/teachers`
 *   **Brief Description:** Unassign multiple teachers from subjects in a class.
 *   **Expected Payload/Body:**
     ```json
@@ -286,7 +286,7 @@
 ### Read Holidays
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/holidays/`
+*   **URL Path:** `/api/v1/holidays/`
 *   **Brief Description:** Retrieve holidays.
 *   **Query Parameters:**
     *   `skip` (integer, optional)
@@ -307,7 +307,7 @@
 ### Create Holiday
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/holidays/`
+*   **URL Path:** `/api/v1/holidays/`
 *   **Brief Description:** Create new holiday.
 *   **Expected Payload/Body:**
     ```json
@@ -332,7 +332,7 @@
 ### Update Holiday
 
 *   **HTTP Method:** `PUT`
-*   **URL Path:** `/holidays/{holiday_id}`
+*   **URL Path:** `/api/v1/holidays/{holiday_id}`
 *   **Brief Description:** Update a holiday.
 *   **Expected Payload/Body:**
     ```json
@@ -357,7 +357,7 @@
 ### Delete Holiday
 
 *   **HTTP Method:** `DELETE`
-*   **URL Path:** `/holidays/{holiday_id}`
+*   **URL Path:** `/api/v1/holidays/{holiday_id}`
 *   **Brief Description:** Delete a holiday.
 *   **Expected Response:**
     ```json
@@ -375,7 +375,7 @@
 ### Get Student's Class Schedule
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/students/me/schedule`
+*   **URL Path:** `/api/v1/students/me/schedule`
 *   **Brief Description:** Get Student's Class Schedule
 *   **Query Parameters:**
     *   `target_date` (date, optional)
@@ -397,7 +397,7 @@
 ### Get Student's Attendance Records
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/students/me/attendance`
+*   **URL Path:** `/api/v1/students/me/attendance`
 *   **Brief Description:** Get Student's Attendance Records over a Date Range
 *   **Query Parameters:**
     *   `startDate` (string, YYYY-MM-DD)
@@ -424,7 +424,7 @@
 ### Get Student's Tasks
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/students/me/tasks`
+*   **URL Path:** `/api/v1/students/me/tasks`
 *   **Brief Description:** Get Student's Tasks
 *   **Expected Response:**
     ```json
@@ -447,7 +447,7 @@
 ### Get Student's Announcements
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/students/me/announcements`
+*   **URL Path:** `/api/v1/students/me/announcements`
 *   **Brief Description:** Get Student's Announcements (School-wide, Class-specific, Subject-specific)
 *   **Expected Response:**
     ```json
@@ -469,7 +469,7 @@
 ### Submit Task File
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/students/me/tasks/{task_id}/submit`
+*   **URL Path:** `/api/v1/students/me/tasks/{task_id}/submit`
 *   **Brief Description:** Submit a file for a student's task
 *   **Expected Payload/Body (form-data):**
     *   `file`: The file to upload.
@@ -489,7 +489,7 @@
 ### List Student Subjects
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/students/me/subjects`
+*   **URL Path:** `/api/v1/students/me/subjects`
 *   **Brief Description:** Get a list of subjects for the current student's class.
 *   **Expected Response:**
     ```json
@@ -506,7 +506,7 @@
 ### Search Students
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/teachers/search`
+*   **URL Path:** `/api/v1/teachers/search`
 *   **Brief Description:** Search for students.
 *   **Query Parameters:**
     *   `name` (string, optional)
@@ -531,7 +531,7 @@
 ### Get My Classes
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/teachers/me/classes`
+*   **URL Path:** `/api/v1/teachers/me/classes`
 *   **Brief Description:** Get the list of classes that the current teacher is assigned to.
 *   **Expected Response:**
     ```json
@@ -547,7 +547,7 @@
 ### Get Teacher's Teaching Load
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/teachers/{teacher_roll_number}/teaching-load`
+*   **URL Path:** `/api/v1/teachers/{teacher_roll_number}/teaching-load`
 *   **Brief Description:** Get the list of classes and subjects a specific teacher is assigned to teach.
 *   **Expected Response:**
     ```json
@@ -564,7 +564,7 @@
 ### Get Teacher's Schedule
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/teachers/me/schedule`
+*   **URL Path:** `/api/v1/teachers/me/schedule`
 *   **Brief Description:** Get Current Teacher's Schedule
 *   **Query Parameters:**
     *   `target_date` (date, optional)
@@ -587,7 +587,7 @@
 ### Get Tasks Created by Me
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/teachers/me/tasks`
+*   **URL Path:** `/api/v1/teachers/me/tasks`
 *   **Brief Description:** Get the list of tasks created by the current teacher.
 *   **Expected Response:**
     ```json
@@ -609,7 +609,7 @@
 ### Create Announcement for My Class
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/teachers/me/announcements`
+*   **URL Path:** `/api/v1/teachers/me/announcements`
 *   **Brief Description:** Create a new announcement for the class(es) you are teaching.
 *   **Expected Payload/Body:**
     ```json
@@ -639,7 +639,7 @@
 ### Get Submissions for a Task
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/teachers/me/tasks/{task_id}/submissions`
+*   **URL Path:** `/api/v1/teachers/me/tasks/{task_id}/submissions`
 *   **Brief Description:** Get all submissions for a specific task that you have created.
 *   **Expected Response:**
     ```json
@@ -659,7 +659,7 @@
 ### Approve a Task Submission
 
 *   **HTTP Method:** `PUT`
-*   **URL Path:** `/teachers/me/submissions/{submission_id}/approve`
+*   **URL Path:** `/api/v1/teachers/me/submissions/{submission_id}/approve`
 *   **Brief Description:** Approve a task submission from a student.
 *   **Expected Response:**
     ```json
@@ -677,7 +677,7 @@
 ### Get Announcements Created by Me
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/teachers/me/announcements`
+*   **URL Path:** `/api/v1/teachers/me/announcements`
 *   **Brief Description:** Get the list of announcements created by the current teacher.
 *   **Expected Response:**
     ```json

@@ -5,7 +5,7 @@
 ### Login for Access Token
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/auth/login/access-token`
+*   **URL Path:** `/api/v1/auth/login/access-token`
 *   **Brief Description:** OAuth2 compatible token login, get an access token for future requests.
 *   **Expected Payload/Body (form-data):**
     *   `username`: The user's email.
@@ -23,7 +23,7 @@
 ### Begin WebAuthn Registration
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/auth/register/webauthn/begin`
+*   **URL Path:** `/api/v1/auth/register/webauthn/begin`
 *   **Brief Description:** Begin WebAuthn registration by generating a challenge.
 *   **Expected Payload/Body:**
     ```json
@@ -43,7 +43,7 @@
 ### Finish WebAuthn Registration
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/auth/register/webauthn/finish`
+*   **URL Path:** `/api/v1/auth/register/webauthn/finish`
 *   **Brief Description:** Finish WebAuthn registration by verifying the client's response.
 *   **Expected Payload/Body:**
     ```json
@@ -62,7 +62,7 @@
 ### Begin WebAuthn Authentication
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/auth/login/webauthn/begin`
+*   **URL Path:** `/api/v1/auth/login/webauthn/begin`
 *   **Brief Description:** Begin WebAuthn authentication by generating a challenge.
 *   **Expected Payload/Body:**
     ```json
@@ -81,7 +81,7 @@
 ### Finish WebAuthn Authentication
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/auth/login/webauthn/finish`
+*   **URL Path:** `/api/v1/auth/login/webauthn/finish`
 *   **Brief Description:** Finish WebAuthn authentication by verifying the client's response.
 *   **Expected Payload/Body:**
     ```json
@@ -103,14 +103,14 @@
 ### Start QR Login
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/auth/qr-login/start`
+*   **URL Path:** `/api/v1/auth/qr-login/start`
 *   **Brief Description:** Initiates a QR code login flow for a new device.
 *   **Expected Response:** An image of a QR code.
 
 ### Approve QR Login
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/auth/qr-login/approve`
+*   **URL Path:** `/api/v1/auth/qr-login/approve`
 *   **Brief Description:** Approves a QR code login request from an authenticated device.
 *   **Expected Payload/Body:**
     ```json
@@ -129,7 +129,7 @@
 ### Poll QR Login Status
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/auth/qr-login/poll/{token}`
+*   **URL Path:** `/api/v1/auth/qr-login/poll/{token}`
 *   **Brief Description:** Polls for the status of a QR code login request.
 *   **Expected Response:**
     ```json
@@ -142,7 +142,7 @@
 ### Cleanup Expired Sessions
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/auth/qr-login/cleanup`
+*   **URL Path:** `/api/v1/auth/qr-login/cleanup`
 *   **Brief Description:** Cleans up expired QR code login sessions from the database.
 *   **Expected Response:**
     ```json
@@ -157,7 +157,7 @@
 ### Generate Recovery Codes
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/auth/recovery/generate`
+*   **URL Path:** `/api/v1/auth/recovery/generate`
 *   **Brief Description:** Generate a new set of recovery codes for the current user.
 *   **Expected Response:**
     ```json
@@ -169,7 +169,7 @@
 ### Recovery Login
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/auth/recovery/login`
+*   **URL Path:** `/api/v1/auth/recovery/login`
 *   **Brief Description:** Log in using a one-time recovery code.
 *   **Expected Payload/Body:**
     ```json
@@ -191,7 +191,7 @@
 ### Get Current User
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/users/me`
+*   **URL Path:** `/api/v1/users/me`
 *   **Brief Description:** Get current logged-in user's information.
 *   **Expected Response:**
     ```json
@@ -212,7 +212,7 @@
 ### Create User
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/admin/users/`
+*   **URL Path:** `/api/v1/admin/users/`
 *   **Brief Description:** Create a new user.
 *   **Expected Payload/Body:**
     ```json
@@ -244,7 +244,7 @@
 ### Read Users
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/admin/users/`
+*   **URL Path:** `/api/v1/admin/users/`
 *   **Brief Description:** Retrieve users.
 *   **Query Parameters:**
     *   `skip` (integer, optional)
@@ -268,7 +268,7 @@
 ### Get User by Roll Number
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/admin/users/{user_roll_number}`
+*   **URL Path:** `/api/v1/admin/users/{user_roll_number}`
 *   **Brief Description:** Get a user by roll number.
 *   **Expected Response:**
     ```json
@@ -287,7 +287,7 @@
 ### Update User
 
 *   **HTTP Method:** `PUT`
-*   **URL Path:** `/admin/users/{user_roll_number}`
+*   **URL Path:** `/api/v1/admin/users/{user_roll_number}`
 *   **Brief Description:** Update a user.
 *   **Expected Payload/Body:**
     ```json
@@ -319,7 +319,7 @@
 ### Delete User
 
 *   **HTTP Method:** `DELETE`
-*   **URL Path:** `/admin/users/{user_roll_number}`
+*   **URL Path:** `/api/v1/admin/users/{user_roll_number}`
 *   **Brief Description:** Delete a user.
 *   **Expected Response:**
     ```json

@@ -13,7 +13,7 @@ class SchoolClassBase(BaseModel):
 
 
 class SchoolClassCreate(SchoolClassBase):
-    pass
+    homeroom_teacher_id: Optional[int] = Field(None, description="ID of the user to be assigned as homeroom teacher.")
 
 
 class SchoolClassUpdate(BaseModel):  # Doesn't inherit Base to make all fields truly optional

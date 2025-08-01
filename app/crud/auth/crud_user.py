@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.models.auth.user import User
+from app.models.core.school_class import SchoolClass as SchoolClassModel
 from app.schemas.auth.user import UserCreate, UserUpdate
 from app.schemas.core.school_class import SchoolClass
 from app.schemas.core.school_class import StudentAssignmentStatus

@@ -10,3 +10,4 @@ bcrypt
 webauthn
 qrcode[pil]
 shapely
+requests

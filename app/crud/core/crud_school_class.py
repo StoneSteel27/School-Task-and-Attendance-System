@@ -79,7 +79,15 @@ def get_school_classes(
     return results
 def create_school_class(db: Session, *, class_in: SchoolClassCreate) -> SchoolClass: # Modified return
     db_class_data = class_in.model_dump()
+    homeroom_teacher_id = db_class_data.pop('homeroom_teacher_id', None)
     db_class_orm = SchoolClass(**db_class_data)
+    if homeroom_teacher_id:
+        teacher = db.query(User).filter(User.id == homeroom_teacher_id).first()
+        if teacher and teacher.role == "teacher":
+            db_class_orm.homeroom_teacher_id = homeroom_teacher_id
+        else:
+            raise ValueError("Invalid homeroom teacher ID")
+
     db.add(db_class_orm)
     try:
         db.commit()
@@ -87,8 +95,6 @@ def create_school_class(db: Session, *, class_in: SchoolClassCreate) -> SchoolCl
         db.rollback()
         raise e
     db.refresh(db_class_orm)
-    # For a newly created class, students and teaching_staff will be empty.
-    # SchoolClassSchema.from_orm will correctly initialize them to [] as per schema default.
     return db_class_orm
 
 

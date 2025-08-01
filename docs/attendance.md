@@ -1,4 +1,3 @@
-
 # Attendance API Endpoints
 
 ## Teacher Attendance
@@ -6,7 +5,7 @@
 ### Check-in
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/attendance/check-in`
+*   **URL Path:** `/api/v1/attendance/check-in`
 *   **Brief Description:** Check in the current teacher, verifying their location and creating an attendance record.
 *   **Expected Payload/Body:**
     ```json
@@ -28,7 +27,7 @@
 ### Check-out
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/attendance/check-out`
+*   **URL Path:** `/api/v1/attendance/check-out`
 *   **Brief Description:** Check out the current teacher, verifying their location and updating the attendance record.
 *   **Expected Payload/Body:**
     ```json
@@ -52,7 +51,7 @@
 ### Submit Homeroom Class Attendance
 
 *   **HTTP Method:** `POST`
-*   **URL Path:** `/teachers/homeroom-attendance/{class_code}/submit`
+*   **URL Path:** `/api/v1/teachers/homeroom-attendance/{class_code}/submit`
 *   **Brief Description:** Submit attendance for all students in a specific homeroom class for a given date and session.
 *   **Expected Payload/Body:**
     ```json
@@ -93,7 +92,7 @@
 ### Get Homeroom Class Attendance
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/teachers/homeroom-attendance/{class_code}/{attendance_date_str}/{session_str}`
+*   **URL Path:** `/api/v1/teachers/homeroom-attendance/{class_code}/{attendance_date_str}/{session_str}`
 *   **Brief Description:** Get all attendance records for a specific homeroom class, date, and session.
 *   **Expected Response:**
     ```json
@@ -117,7 +116,7 @@
 ### Get Student Attendance Records
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/admin/attendance/student/{student_roll_number}`
+*   **URL Path:** `/api/v1/admin/attendance/student/{student_roll_number}`
 *   **Brief Description:** Admin: Get Student Attendance Records by Roll Number
 *   **Query Parameters:**
     *   `startDate` (string, YYYY-MM-DD)
@@ -144,7 +143,7 @@
 ### Get Classroom Attendance
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/admin/attendance/class/{class_code}/{attendance_date_str}/{session_str}`
+*   **URL Path:** `/api/v1/admin/attendance/class/{class_code}/{attendance_date_str}/{session_str}`
 *   **Brief Description:** Admin: Get Classroom Attendance by Date and Session
 *   **Expected Response:**
     ```json
@@ -166,7 +165,7 @@
 ### Get Classroom Attendance Summary
 
 *   **HTTP Method:** `GET`
-*   **URL Path:** `/admin/attendance/class/{class_code}/{attendance_date_str}/{session_str}/summary`
+*   **URL Path:** `/api/v1/admin/attendance/class/{class_code}/{attendance_date_str}/{session_str}/summary`
 *   **Brief Description:** Admin: Get Classroom Attendance Percentage Summary
 *   **Expected Response:**
     ```json
@@ -189,7 +188,7 @@
 ### Delete Student Attendance Record
 
 *   **HTTP Method:** `DELETE`
-*   **URL Path:** `/admin/attendance/{record_id}`
+*   **URL Path:** `/api/v1/admin/attendance/{record_id}`
 *   **Brief Description:** Admin: Delete a Student Attendance Record
 *   **Expected Response:**
     ```json
